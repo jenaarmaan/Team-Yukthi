@@ -1,0 +1,5 @@
+{
+  "summary":  "Comprehensive architectural blueprint and migration specification for transitioning NIYOJAN from client-side state to a full-stack platform with Node.js/Express, Firebase Cloud Firestore, Firebase Auth, RBAC, and Cloud Run.",
+  "updatedAt":  "2026-10-30T12:44:00.675263352Z",
+  "userFacing":  true
+}

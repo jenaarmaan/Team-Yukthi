@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.role in ['super_admin', 'hr_admin', 'recruitment_manager'] ||
+        request.auth.token.email in ['jena.sushmita786@gmail.com', 'armaan.jena08@gmail.com', 'armaan.sj04@gmail.com']
+      );
+    }
+
+    // Candidate Resumes: Candidates can upload their own PDF/DOCX (max 10MB); HR can read all
+    match /resumes/{candidateId}/{fileName} {
+      allow read: if isOwner(candidateId) || isAdmin();
+      allow write: if (isOwner(candidateId) || isAdmin()) &&
+                     request.resource.size < 10 * 1024 * 1024 &&
+                     (request.resource.contentType.matches('application/pdf') ||
+                      request.resource.contentType.matches('application/msword') ||
+                      request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
+    }
+
+    // Medical & Absence Justification Documents: Only candidate and HR can access
+    match /absence_docs/{applicationId}/{fileName} {
+      allow read: if isSignedIn() || isAdmin();
+      allow write: if isSignedIn() &&
+                     request.resource.size < 10 * 1024 * 1024 &&
+                     (request.resource.contentType.matches('application/pdf') ||
+                      request.resource.contentType.matches('image/.*'));
+    }
+
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log*
+.git
+.gitignore
+.aistudio
+dist
+.env*
+!.env.example
+*.md
+coverage
+server/test
+.DS_Store

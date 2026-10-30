@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix Remix Remix Remix NIYOJAN - Intelligent Recruitment",
+  "description": "Intelligent recruitment mobile platform for coordinated hiring drives, interview allocations, waitlists, and proactive standby management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
