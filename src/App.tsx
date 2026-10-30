@@ -24,9 +24,11 @@ import { AuthFlow } from './components/auth/AuthFlow';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { InterviewerLayout } from './components/interviewer/InterviewerLayout';
 import { PublicHomePage, PublicWorkspaceTarget } from './components/public/PublicHomePage';
+import { AuthPage } from './components/auth/AuthPage';
+import { clientAuthService } from './services/firebaseAuth';
 
 export default function App() {
-  const [platform, setPlatform] = useState<'home' | 'hr_admin' | 'candidate_mobile' | 'interviewer'>('home');
+  const [platform, setPlatform] = useState<'home' | 'login' | 'hr_admin' | 'candidate_mobile' | 'interviewer'>('home');
   const [profile, setProfile] = useState<CandidateProfile>(recruitmentService.getCurrentProfile());
   const [applications, setApplications] = useState<Application[]>(recruitmentService.getCandidateApplications());
   const [drives, setDrives] = useState<HiringDrive[]>(recruitmentService.getHiringDrives());
@@ -105,20 +107,41 @@ export default function App() {
           }
         }}
         onOpenAuth={() => {
-          setIsAuthActive(true);
-          setPlatform('candidate_mobile');
+          setPlatform('login');
         }}
       />
     );
   }
 
-  // HR / Company Admin Dashboard Platform
+  // Dedicated Authentication Landing Page (Login / Register / Forgot Password)
+  if (platform === 'login') {
+    return (
+      <AuthPage
+        initialView="login"
+        onBackToHome={() => setPlatform('home')}
+        onSuccess={(role) => {
+          if (role === 'candidate') {
+            setPlatform('candidate_mobile');
+          } else if (role === 'interviewer') {
+            recruitmentService.switchAdminRole('interviewer');
+            setPlatform('interviewer');
+          } else {
+            recruitmentService.switchAdminRole(role);
+            setPlatform('hr_admin');
+          }
+        }}
+      />
+    );
+  }
+
+  // HR / Company Admin Dashboard Platform (Super Admin, HR Admin, Recruitment Manager, Coordinator)
   if (platform === 'hr_admin') {
     return (
       <AdminLayout
         onSwitchToCandidateApp={() => setPlatform('candidate_mobile')}
         onSwitchToInterviewer={() => setPlatform('interviewer')}
         onSwitchToHome={() => setPlatform('home')}
+        onLogout={() => setPlatform('home')}
       />
     );
   }
@@ -130,6 +153,7 @@ export default function App() {
         onSwitchToAdmin={() => setPlatform('hr_admin')}
         onSwitchToCandidateApp={() => setPlatform('candidate_mobile')}
         onSwitchToHome={() => setPlatform('home')}
+        onLogout={() => setPlatform('home')}
       />
     );
   }
@@ -239,7 +263,10 @@ export default function App() {
         {activeTab === 'profile' && (
           <ProfileView
             profile={profile}
-            onLogout={() => setIsAuthActive(true)}
+            onLogout={async () => {
+              await clientAuthService.logout();
+              setPlatform('home');
+            }}
             onOpenScenarioSwitcher={() => setShowScenarioSwitcher(true)}
           />
         )}

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { InterviewerProfile } from '../../types/recruitment';
 import { recruitmentService } from '../../services/storageService';
+import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import {
   User,
   Mail,
@@ -12,7 +13,8 @@ import {
   CheckCircle2,
   Clock,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  KeyRound
 } from 'lucide-react';
 
 interface InterviewerProfileViewProps {
@@ -24,6 +26,7 @@ export const InterviewerProfileView: React.FC<InterviewerProfileViewProps> = ({
   interviewer,
   onInterviewerSwitched
 }) => {
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const allInterviewers = recruitmentService.getInterviewers();
 
   const handleSwitchPanelist = (id: string) => {
@@ -132,8 +135,27 @@ export const InterviewerProfileView: React.FC<InterviewerProfileViewProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Switch Panelist (Demo Persona Selector) */}
+        {/* Right Column: Account Security & Switch Panelist */}
         <div className="space-y-5">
+          {/* Account Security Card */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-indigo-600" />
+              <span>Interviewer Account Security</span>
+            </h3>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Your evaluation submissions and candidate assessments are signed with your credentials. Keep your password confidential.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowPasswordModal(true)}
+              className="w-full py-2.5 px-3 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100/70 text-indigo-800 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Reset / Change Password</span>
+            </button>
+          </div>
+
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <RefreshCw className="w-4 h-4 text-indigo-600" />
@@ -171,6 +193,12 @@ export const InterviewerProfileView: React.FC<InterviewerProfileViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Reset Password Modal */}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </div>
   );
 };

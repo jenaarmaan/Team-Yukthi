@@ -14,10 +14,6 @@ import {
   Smartphone,
   ChevronRight,
   Clock,
-  Send,
-  MapPin,
-  Mail,
-  Phone,
   ExternalLink,
   Cpu,
   BarChart3,
@@ -53,32 +49,6 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'candidate' | 'staff' | 'persona'>('persona');
-  const [contactSubmitted, setContactSubmitted] = useState(false);
-  const [contactForm, setContactForm] = useState({
-    name: '',
-    email: '',
-    organization: '',
-    role: 'University Placement Cell',
-    subject: '',
-    message: ''
-  });
-
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!contactForm.name || !contactForm.email || !contactForm.message) return;
-    setContactSubmitted(true);
-    setTimeout(() => {
-      setContactSubmitted(false);
-      setContactForm({
-        name: '',
-        email: '',
-        organization: '',
-        role: 'University Placement Cell',
-        subject: '',
-        message: ''
-      });
-    }, 4000);
-  };
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -99,7 +69,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
           {/* LEFT: Login / Register Option */}
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => setShowAuthModal(true)}
+              onClick={onOpenAuth}
               className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-md shadow-indigo-500/20 active:scale-95 transition-all duration-200 border border-indigo-400/30"
               title="Open Authentication & Quick Sign-In"
             >
@@ -153,9 +123,6 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
               </button>
               <button onClick={() => scrollToSection('how-it-works')} className="hover:text-indigo-400 transition-colors">
                 How It Works
-              </button>
-              <button onClick={() => scrollToSection('contact')} className="hover:text-indigo-400 transition-colors">
-                Contact
               </button>
             </nav>
 
@@ -226,7 +193,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
                 </button>
 
                 <button
-                  onClick={() => setShowAuthModal(true)}
+                  onClick={onOpenAuth}
                   className="inline-flex items-center gap-2 px-4 py-3.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
@@ -1223,7 +1190,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
                 <li><button onClick={() => scrollToSection('why-us')} className="hover:text-indigo-400 transition-colors">Why Choose NIYOJAN</button></li>
                 <li><button onClick={() => scrollToSection('how-it-works')} className="hover:text-indigo-400 transition-colors">How It Works</button></li>
                 <li><button onClick={() => scrollToSection('contact')} className="hover:text-indigo-400 transition-colors">Contact Support</button></li>
-                <li><button onClick={() => setShowAuthModal(true)} className="hover:text-indigo-400 transition-colors">Login / Register</button></li>
+                <li><button onClick={onOpenAuth} className="hover:text-indigo-400 transition-colors">Login / Register</button></li>
               </ul>
             </div>
 

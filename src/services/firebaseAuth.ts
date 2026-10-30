@@ -14,6 +14,27 @@ export interface CandidateRegistrationInput {
   skills: string[];
 }
 
+export interface HrAdminRegistrationInput {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  department?: string;
+  employeeId?: string;
+  companyName?: string;
+}
+
+export interface StaffRegistrationInput {
+  fullName: string;
+  email: string;
+  phone?: string;
+  role: 'recruitment_manager' | 'interview_coordinator' | 'interviewer';
+  department?: string;
+  password?: string;
+  assignedPanel?: string;
+  specialization?: string;
+}
+
 export interface AuthSessionUser {
   uid: string;
   email: string;
@@ -172,13 +193,98 @@ class ClientAuthService {
   }
 
   /**
+   * Registers an HR Administrator account.
+   */
+  public async registerHrAdmin(input: HrAdminRegistrationInput): Promise<AuthSessionUser> {
+    const res = await fetch('/api/v1/auth/register-hr-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input)
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error?.message || 'HR Administrator registration failed.');
+    }
+
+    const sessionUser: AuthSessionUser = {
+      uid: data.data.user.uid,
+      email: data.data.user.email,
+      displayName: data.data.user.displayName,
+      role: data.data.user.role,
+      idToken: data.data.idToken
+    };
+    this.saveSession(sessionUser);
+    return sessionUser;
+  }
+
+  /**
+   * Invites and provisions a staff member (Recruitment Manager, Coordinator, or Interviewer).
+   */
+  public async registerStaff(input: StaffRegistrationInput): Promise<any> {
+    const token = await this.getValidIdToken();
+    const res = await fetch('/api/v1/auth/register-staff', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(input)
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error?.message || 'Staff registration failed.');
+    }
+    return data.data;
+  }
+
+  /**
+   * Changes current password in authenticated profile.
+   */
+  public async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const token = await this.getValidIdToken();
+    const res = await fetch('/api/v1/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error?.message || 'Password update failed.');
+    }
+  }
+
+  /**
+   * Fetches the list of all staff members.
+   */
+  public async listStaffMembers(): Promise<any[]> {
+    const token = await this.getValidIdToken();
+    const res = await fetch('/api/v1/auth/staff-members', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error?.message || 'Failed to fetch staff members.');
+    }
+    return data.data?.staff || [];
+  }
+
+  /**
    * Signs in a user via the backend API.
    */
-  public async login(email: string, password: string): Promise<AuthSessionUser> {
+  public async login(userIdOrEmail: string, password: string): Promise<AuthSessionUser> {
     const backendRes = await fetch('/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ userId: userIdOrEmail, email: userIdOrEmail, password })
     });
 
     const backendData = await backendRes.json();

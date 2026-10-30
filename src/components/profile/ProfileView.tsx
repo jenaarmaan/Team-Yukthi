@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CandidateProfile, SkillVerificationLevel } from '../../types/recruitment';
 import { recruitmentService } from '../../services/storageService';
 import { CandidateTypeBadge } from '../common/StatusBadge';
+import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import {
   User,
   GraduationCap,
@@ -21,7 +22,8 @@ import {
   ChevronRight,
   LogOut,
   RefreshCw,
-  X
+  X,
+  KeyRound
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -39,6 +41,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showAddSkillModal, setShowAddSkillModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // Verification badge helper
   const renderVerificationBadge = (level: SkillVerificationLevel) => {
@@ -329,6 +332,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* 8. SYSTEM & ACCOUNT SETTINGS */}
       <div className="space-y-2 pt-2">
         <button
+          onClick={() => setShowPasswordModal(true)}
+          className="w-full py-2.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-between border border-slate-200 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-indigo-600" />
+            <span>Reset / Change Password</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
+        </button>
+
+        <button
           onClick={onOpenScenarioSwitcher}
           className="w-full py-2.5 px-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold text-xs flex items-center justify-between border border-indigo-200/80 transition-colors"
         >
@@ -344,6 +358,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <span>Sign Out of NIYOJAN</span>
         </button>
       </div>
+
+      {/* MODAL: CHANGE PASSWORD */}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
 
       {/* MODAL: EDIT LOCATION PREFERENCES */}
       {showLocationModal && (

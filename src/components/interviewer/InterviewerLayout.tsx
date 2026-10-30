@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { recruitmentService } from '../../services/storageService';
+import { clientAuthService } from '../../services/firebaseAuth';
 import {
   InterviewerProfile,
   InterviewerCandidateSnapshot
@@ -40,6 +41,7 @@ interface InterviewerLayoutProps {
   onSwitchToAdmin: () => void;
   onSwitchToCandidateApp: () => void;
   onSwitchToHome?: () => void;
+  onLogout?: () => void;
 }
 
 export type InterviewerNavTab =
@@ -56,13 +58,23 @@ export type InterviewerNavTab =
 export const InterviewerLayout: React.FC<InterviewerLayoutProps> = ({
   onSwitchToAdmin,
   onSwitchToCandidateApp,
-  onSwitchToHome
+  onSwitchToHome,
+  onLogout
 }) => {
   const [activeTab, setActiveTab] = useState<InterviewerNavTab>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [interviewer, setInterviewer] = useState<InterviewerProfile>(
     recruitmentService.getActiveInterviewer()
   );
+
+  const handleLogout = async () => {
+    await clientAuthService.logout();
+    if (onLogout) {
+      onLogout();
+    } else if (onSwitchToHome) {
+      onSwitchToHome();
+    }
+  };
 
   // Modals & Sub-views state
   const [snapshotCandidate, setSnapshotCandidate] = useState<InterviewerCandidateSnapshot | null>(null);
@@ -180,6 +192,16 @@ export const InterviewerLayout: React.FC<InterviewerLayoutProps> = ({
             <span>Candidate App</span>
           </button>
 
+          {/* Sign Out */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50/50 hover:bg-rose-100/60 text-xs font-semibold text-rose-600 transition-colors"
+            title="Sign Out of Interviewer Workspace"
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-600" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
+
           {/* Panelist Profile Pill */}
           <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
             <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
@@ -233,10 +255,20 @@ export const InterviewerLayout: React.FC<InterviewerLayoutProps> = ({
           </div>
 
           {/* Quick Panelist Switcher footer */}
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5 mt-6">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Panel</span>
-            <span className="font-bold text-slate-800 block text-xs">{interviewer.assignedPanel}</span>
-            <span className="text-[11px] text-slate-500 block">{interviewer.location} Campus</span>
+          <div className="space-y-2 mt-6">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Panel</span>
+              <span className="font-bold text-slate-800 block text-xs">{interviewer.assignedPanel}</span>
+              <span className="text-[11px] text-slate-500 block">{interviewer.location} Campus</span>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full py-2 px-3 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+              <span>Sign Out</span>
+            </button>
           </div>
         </aside>
 

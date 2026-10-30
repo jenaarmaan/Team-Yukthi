@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { recruitmentService } from '../../services/storageService';
+import { clientAuthService } from '../../services/firebaseAuth';
 import { AdminRole, AdminUser } from '../../types/recruitment';
 import { AdminOverview } from './AdminOverview';
 import { AdminHiringDrives } from './AdminHiringDrives';
@@ -11,8 +12,10 @@ import { AdminAttendance } from './AdminAttendance';
 import { AdminAbsenceManagement } from './AdminAbsenceManagement';
 import { AdminSelfHealingCenter } from './AdminSelfHealingCenter';
 import { AdminInterviewers } from './AdminInterviewers';
+import { AdminStaffManagement } from './AdminStaffManagement';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminQATestRunner } from './AdminQATestRunner';
+import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import {
   LayoutDashboard,
   Building2,
@@ -33,13 +36,17 @@ import {
   Bell,
   Search,
   FlaskConical,
-  Home
+  Home,
+  UserPlus,
+  KeyRound,
+  Shield
 } from 'lucide-react';
 
 interface AdminLayoutProps {
   onSwitchToCandidateApp: () => void;
   onSwitchToInterviewer?: () => void;
   onSwitchToHome?: () => void;
+  onLogout?: () => void;
 }
 
 export type AdminTab =
@@ -53,16 +60,19 @@ export type AdminTab =
   | 'absence'
   | 'self-healing'
   | 'interviewers'
+  | 'staff'
   | 'analytics'
   | 'qa-tests';
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onSwitchToCandidateApp,
   onSwitchToInterviewer,
-  onSwitchToHome
+  onSwitchToHome,
+  onLogout
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [, setTick] = useState(0);
 
   React.useEffect(() => {
@@ -74,27 +84,63 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const currentAdmin = recruitmentService.getCurrentAdmin();
   const currentRole = recruitmentService.getCurrentAdminRole();
 
-  const navItems: { id: AdminTab; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
-    { id: 'overview', label: 'Command Overview', icon: LayoutDashboard },
-    { id: 'drives', label: 'Hiring Drives', icon: Building2 },
-    { id: 'candidates', label: 'Candidate Database', icon: Users },
-    { id: 'scheduling', label: 'Interview Slots', icon: Calendar },
-    { id: 'waitlist', label: 'Dynamic Waitlist', icon: Clock },
-    { id: 'standby', label: 'Proactive Standby', icon: Sparkles },
-    { id: 'attendance', label: 'Live Attendance Desk', icon: CheckCircle2 },
-    { id: 'absence', label: 'Absence Governance', icon: ShieldAlert },
-    { id: 'self-healing', label: 'Self-Healing Center', icon: RefreshCw },
-    { id: 'interviewers', label: 'Interviewer Panels', icon: Award },
-    { id: 'analytics', label: 'Reports & Telemetry', icon: BarChart3 },
-    { id: 'qa-tests', label: 'QA Test Console', icon: FlaskConical, badge: 9 }
+  // Role-tailored navigation items
+  const allNavItems: { id: AdminTab; label: string; icon: React.FC<{ className?: string }>; badge?: number; roles: AdminRole[] }[] = [
+    { id: 'overview', label: 'Command Overview', icon: LayoutDashboard, roles: ['super_admin', 'hr_admin', 'recruitment_manager', 'interview_coordinator'] },
+    { id: 'drives', label: 'Hiring Drives', icon: Building2, roles: ['super_admin', 'hr_admin'] },
+    { id: 'candidates', label: 'Candidate Database', icon: Users, roles: ['super_admin', 'recruitment_manager'] },
+    { id: 'scheduling', label: 'Interview Slots', icon: Calendar, roles: ['super_admin', 'recruitment_manager', 'interview_coordinator'] },
+    { id: 'waitlist', label: 'Dynamic Waitlist', icon: Clock, roles: ['super_admin', 'hr_admin', 'recruitment_manager'] },
+    { id: 'standby', label: 'Proactive Standby', icon: Sparkles, roles: ['super_admin', 'interview_coordinator'] },
+    { id: 'attendance', label: 'Live Attendance Desk', icon: CheckCircle2, roles: ['super_admin', 'interview_coordinator'] },
+    { id: 'absence', label: 'Absence Governance', icon: ShieldAlert, roles: ['super_admin', 'hr_admin'] },
+    { id: 'self-healing', label: 'Self-Healing Center', icon: RefreshCw, roles: ['super_admin', 'hr_admin'] },
+    { id: 'interviewers', label: 'Interviewer Panels', icon: Award, roles: ['super_admin', 'hr_admin', 'recruitment_manager', 'interview_coordinator'] },
+    { id: 'staff', label: 'Staff Management & Invites', icon: UserPlus, roles: ['super_admin', 'hr_admin'] },
+    { id: 'analytics', label: 'Reports & Telemetry', icon: BarChart3, roles: ['super_admin', 'hr_admin', 'recruitment_manager'] },
+    { id: 'qa-tests', label: 'QA Test Console', icon: FlaskConical, badge: 9, roles: ['super_admin'] }
   ];
+
+  const visibleNavItems = allNavItems.filter((item) => item.roles.includes(currentRole));
 
   const handleRoleChange = (role: AdminRole) => {
     recruitmentService.switchAdminRole(role);
     if (role === 'interviewer' && onSwitchToInterviewer) {
       onSwitchToInterviewer();
+    } else {
+      // If switching to a role that does not have the current activeTab, reset to overview
+      const allowedTabs = allNavItems.filter((i) => i.roles.includes(role)).map((i) => i.id);
+      if (!allowedTabs.includes(activeTab)) {
+        setActiveTab('overview');
+      }
     }
   };
+
+  const handleLogout = async () => {
+    await clientAuthService.logout();
+    if (onLogout) {
+      onLogout();
+    } else if (onSwitchToHome) {
+      onSwitchToHome();
+    }
+  };
+
+  const getRoleHeaderInfo = () => {
+    switch (currentRole) {
+      case 'super_admin':
+        return { title: 'NIYOJAN Super Admin', badge: 'SUPER ADMIN', sub: 'Enterprise Security, Audit & Platform Governance' };
+      case 'hr_admin':
+        return { title: 'NIYOJAN HR Admin', badge: 'HR ADMIN', sub: 'Campus Hiring Drives, Staffing & Workforce Planning' };
+      case 'recruitment_manager':
+        return { title: 'NIYOJAN Recruitment Manager', badge: 'RECRUITMENT MGR', sub: 'Candidate Pipeline, Skills & Slot Allocation' };
+      case 'interview_coordinator':
+        return { title: 'NIYOJAN Interview Coordinator', badge: 'COORDINATOR', sub: 'Venue Operations, Live Attendance & Standby Triage' };
+      default:
+        return { title: 'NIYOJAN Workspace', badge: currentRole.toUpperCase(), sub: 'Excelsoft Technologies Recruitment Management' };
+    }
+  };
+
+  const roleMeta = getRoleHeaderInfo();
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900 selection:bg-indigo-500 selection:text-white">
@@ -115,12 +161,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-base tracking-tight text-slate-900">NIYOJAN</span>
+                <span className="font-black text-base tracking-tight text-slate-900">{roleMeta.title}</span>
                 <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                  HR Admin Portal
+                  {roleMeta.badge}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-500 hidden sm:block">Excelsoft Technologies Recruitment Management</p>
+              <p className="text-[10px] text-slate-500 hidden sm:block">{roleMeta.sub}</p>
             </div>
           </div>
         </div>
@@ -158,7 +204,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             title="Open Candidate-Facing Mobile Experience"
           >
             <Smartphone className="w-3.5 h-3.5 text-indigo-300" />
-            <span className="hidden md:inline">Switch to Candidate Mobile View</span>
+            <span className="hidden md:inline">Candidate Mobile View</span>
             <span className="md:hidden">Candidate App</span>
           </button>
 
@@ -178,8 +224,24 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
           </div>
 
-          {/* Profile Pill */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+          {/* Profile Pill & Security Actions */}
+          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 transition-colors"
+              title="Reset / Change Password"
+            >
+              <KeyRound className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors"
+              title="Sign Out of Dashboard"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+
             <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
               {currentAdmin.avatarInitials}
             </div>
@@ -200,11 +262,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           }`}
         >
           <div className="space-y-1">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
-              Recruitment Lifecycle
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2 flex items-center justify-between">
+              <span>Recruitment Lifecycle</span>
+              <span className="text-[9px] px-1.5 py-0.2 bg-slate-100 text-slate-500 rounded font-mono">
+                {currentRole}
+              </span>
             </div>
 
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = activeTab === item.id;
               const IconComp = item.icon;
 
@@ -236,23 +301,31 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             })}
           </div>
 
-          {/* Sidebar Footer: System Status */}
+          {/* Sidebar Footer: System Status & Account */}
           <div className="pt-4 border-t border-slate-100 text-xs space-y-2">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-600">
-              <div className="font-bold text-slate-800">Unified Database</div>
-              <div className="text-[10px] text-emerald-700 flex items-center gap-1 mt-0.5">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                <span>Connected with Candidate Mobile App</span>
-              </div>
-            </div>
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="w-full py-2 px-3 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Reset Password</span>
+            </button>
 
             <button
-              onClick={onSwitchToCandidateApp}
-              className="w-full py-2 px-3 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+              onClick={handleLogout}
+              className="w-full py-2 px-3 rounded-lg border border-rose-200 bg-rose-50/40 text-rose-600 hover:bg-rose-100 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
             >
-              <Smartphone className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Preview Candidate App</span>
+              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+              <span>Sign Out</span>
             </button>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-600">
+              <div className="font-bold text-slate-800">Unified SQLite DB</div>
+              <div className="text-[10px] text-emerald-700 flex items-center gap-1 mt-0.5">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                <span>Connected & Bull-Resilient</span>
+              </div>
+            </div>
           </div>
         </aside>
 
@@ -283,11 +356,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
           {activeTab === 'interviewers' && <AdminInterviewers />}
 
+          {activeTab === 'staff' && <AdminStaffManagement />}
+
           {activeTab === 'analytics' && <AdminAnalytics />}
 
           {activeTab === 'qa-tests' && <AdminQATestRunner />}
         </main>
       </div>
+
+      {/* Password Reset Modal */}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </div>
   );
 };

@@ -52,11 +52,17 @@ export interface UserDocument {
   phone?: string;
   role: UserRole;
   displayName: string;
-  avatarInitials: string;
+  avatarInitials?: string;
   department?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  passwordHash?: string;
+  passwordSalt?: string;
+  employeeId?: string;
+  assignedPanel?: string;
+  specialization?: string;
+  status?: string;
 }
 
 // 2. candidate_profiles: Extended academic and professional records
@@ -283,12 +289,14 @@ export interface InterviewerPanelDocument {
   name: string;
   email: string;
   role: string;
-  department: string;
+  department?: string;
   skills: string[];
   assignedPanel: string;
-  location: string;
-  activeInterviewsCount: number;
-  availableDays: string[];
+  location?: string;
+  activeInterviewsCount?: number;
+  availableDays?: string[];
+  interviewerId?: string;
+  status?: string;
   createdAt: string;
 }
 
