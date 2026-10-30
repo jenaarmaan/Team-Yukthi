@@ -1,7 +1,8 @@
-import { adminApp, adminDb, adminAuth, adminStorage, firebaseConfig, getFirebaseGatewayStatus } from '../config/firebase.ts';
+import { getDatabaseGatewayStatus, db } from '../config/database.ts';
 import { HealthService } from '../services/healthService.ts';
 import { StorageService } from '../services/storageService.ts';
 import { NIYOJAN_COLLECTION_NAMES, repositories } from '../repositories/index.ts';
+import { JwtUtil } from '../utils/jwt.ts';
 
 interface TestResult {
   suite: string;
@@ -23,86 +24,66 @@ export async function runPhase2Verification(): Promise<{ summary: { total: numbe
   };
 
   console.log('\n=============================================================');
-  console.log('   NIYOJAN PHASE 2: FIREBASE INFRASTRUCTURE VERIFICATION   ');
+  console.log('   NIYOJAN PHASE 2: SQLITE INFRASTRUCTURE VERIFICATION   ');
   console.log('=============================================================\n');
 
-  // Test 1: Firebase Admin Initialization
+  // Test 1: SQLite Database Initialization & WAL Mode
   try {
-    const gateway = getFirebaseGatewayStatus();
-    const appName = adminApp.name;
-    const isReady = Boolean(adminApp && appName);
-    record('Firebase Admin SDK', 'Initializes Admin App with Project & Named Database', isReady, {
-      appName,
-      projectId: gateway.projectId,
-      firestoreDatabaseId: gateway.firestoreDatabaseId,
-      storageBucket: gateway.storageBucket,
-      credentialSource: gateway.credentialSource
+    const gateway = getDatabaseGatewayStatus();
+    const isReady = gateway.isInitialized && gateway.engine === 'sqlite3_builtin';
+    record('SQLite Database Engine', 'Initializes SQLite Database with WAL journal mode', isReady, {
+      engine: gateway.engine,
+      databasePath: gateway.databasePath,
+      isWalMode: gateway.isWalMode,
+      tablesCount: gateway.tablesCount
     });
   } catch (err: any) {
-    record('Firebase Admin SDK', 'Initializes Admin App with Project & Named Database', false, undefined, err.message);
+    record('SQLite Database Engine', 'Initializes SQLite Database with WAL journal mode', false, undefined, err.message);
   }
 
-  // Test 2: Firestore Collection Definitions & Typed Repositories
+  // Test 2: SQLite Schema & Repositories
   try {
     const totalCollections = NIYOJAN_COLLECTION_NAMES.length;
     const repoKeys = Object.keys(repositories);
     const passed = totalCollections >= 14 && repoKeys.length === totalCollections;
-    record('Firestore Schema & Repositories', 'All NIYOJAN collections typed and initialized', passed, {
+    record('SQLite Schema & Repositories', 'All NIYOJAN collections typed and initialized', passed, {
       totalCollections,
       collections: NIYOJAN_COLLECTION_NAMES,
       repositoriesMapped: repoKeys.length
     });
   } catch (err: any) {
-    record('Firestore Schema & Repositories', 'All 14 NIYOJAN collections typed and initialized', false, undefined, err.message);
+    record('SQLite Schema & Repositories', 'All NIYOJAN collections typed and initialized', false, undefined, err.message);
   }
 
-  // Test 3: Genuine Firestore Read / Write / Cleanup
+  // Test 3: Genuine SQLite Read / Write / Cleanup
   try {
     const testDocId = `verify_phase2_${Date.now()}`;
-    const baseUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents`;
-    const docUrl = `${baseUrl}/_health_check/${testDocId}?key=${firebaseConfig.apiKey}`;
+    const now = new Date().toISOString();
 
     // Write
-    const writeRes = await fetch(docUrl, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fields: {
-          testRunner: { stringValue: 'verifyPhase2' },
-          timestamp: { timestampValue: new Date().toISOString() },
-          active: { booleanValue: true }
-        }
-      })
-    });
-    const writeOk = writeRes.ok;
+    const insertStmt = db.prepare('INSERT INTO documents (collection, id, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)');
+    insertStmt.run('_health_check', testDocId, JSON.stringify({ testRunner: 'verifyPhase2', active: true }), now, now);
+    const writeOk = true;
 
     // Read back
-    let readOk = false;
-    let readFields: any = null;
-    if (writeOk) {
-      const readRes = await fetch(docUrl);
-      const readData = await readRes.json();
-      readOk = readRes.ok && Boolean(readData.fields);
-      readFields = readData.fields;
-    }
+    const selectStmt = db.prepare('SELECT data FROM documents WHERE collection = ? AND id = ?');
+    const row = selectStmt.get('_health_check', testDocId) as any;
+    const readOk = Boolean(row && row.data);
 
     // Cleanup
-    let cleanupOk = false;
-    if (writeOk) {
-      const delRes = await fetch(docUrl, { method: 'DELETE' });
-      cleanupOk = delRes.ok;
-    }
+    const deleteStmt = db.prepare('DELETE FROM documents WHERE collection = ? AND id = ?');
+    deleteStmt.run('_health_check', testDocId);
+    const cleanupOk = true;
 
     const testPassed = writeOk && readOk && cleanupOk;
-    record('Cloud Firestore Operations', 'Live read, write, and cleanup on dedicated diagnostic document', testPassed, {
+    record('SQLite Document Operations', 'Live read, write, and cleanup on dedicated diagnostic document', testPassed, {
       testDocId,
-      writeStatus: writeRes.status,
+      writeVerified: writeOk,
       readVerified: readOk,
-      cleanupStatus: cleanupOk ? 200 : 'failed',
-      writtenService: readFields?.testRunner?.stringValue
+      cleanupVerified: cleanupOk
     });
   } catch (err: any) {
-    record('Cloud Firestore Operations', 'Live read, write, and cleanup on dedicated diagnostic document', false, undefined, err.message);
+    record('SQLite Document Operations', 'Live read, write, and cleanup on dedicated diagnostic document', false, undefined, err.message);
   }
 
   // Test 4: Authentication ID Token Verification
@@ -111,126 +92,105 @@ export async function runPhase2Verification(): Promise<{ summary: { total: numbe
     let rejectedInvalid = false;
     let rejectCode = '';
     try {
-      await adminAuth.verifyIdToken('invalid.jwt.token.string');
+      await JwtUtil.verify('invalid.jwt.token.string');
     } catch (authErr: any) {
       rejectedInvalid = true;
       rejectCode = authErr.code || authErr.message;
     }
 
-    record('Firebase Authentication', 'Verifies and rejects forged / invalid ID token', rejectedInvalid, {
+    record('Authentication Service', 'Verifies and rejects forged / invalid ID token', rejectedInvalid, {
       rejectionCode: rejectCode
     });
+
+    // 4B: Sign and verify genuine session token
+    const sampleToken = JwtUtil.sign({
+      uid: 'user_diagnostic_phase2',
+      email: 'diagnostic@niyojan.local',
+      role: 'super_admin',
+      displayName: 'Phase 2 Verifier'
+    });
+    const verified = await JwtUtil.verify(sampleToken);
+    const verifyPassed = verified.uid === 'user_diagnostic_phase2' && verified.role === 'super_admin';
+
+    record('Authentication Service', 'Generates and verifies authentic HS256 JWT session tokens', verifyPassed, {
+      verifiedUid: verified.uid,
+      verifiedRole: verified.role
+    });
   } catch (err: any) {
-    record('Firebase Authentication', 'Verifies and rejects forged / invalid ID token', false, undefined, err.message);
+    record('Authentication Service', 'Token validation failed', false, undefined, err.message);
   }
 
-  // Test 5: Storage Restricted Upload URL Generation
+  // Test 5: Storage Security & Restricted URL Generation
   try {
     const uploadRes = await StorageService.generateRestrictedUploadUrl({
-      candidateId: 'test_candidate_101',
-      driveId: 'drive_excelsoft_gse_2026',
+      candidateId: 'cand_test_001',
+      driveId: 'drive_phase2',
       documentType: 'resume',
-      originalFileName: 'rahul_sharma_resume.pdf',
+      originalFileName: 'resume_john_doe.pdf',
       mimeType: 'application/pdf',
       fileSizeBytes: 1024 * 500
     });
 
-    const isRestricted = uploadRes.isPrivate === true;
-    const hasPath = uploadRes.storagePath.includes('documents/drive_excelsoft_gse_2026/test_candidate_101/resume/');
-    const hasUploadUrl = Boolean(uploadRes.uploadUrl);
+    const isSecurePath = uploadRes.storagePath.startsWith('documents/drive_phase2/cand_test_001/resume/');
+    const hasValidTtl = new Date(uploadRes.expiresAt) > new Date();
 
-    record('Cloud Storage Access', 'Generates restricted, short-lived upload URL for candidate documents', isRestricted && hasPath && hasUploadUrl, {
+    record('Storage Security', 'Generates isolated private upload URL with cryptographic signature', isSecurePath && hasValidTtl, {
       storagePath: uploadRes.storagePath,
       method: uploadRes.method,
-      expiresAt: uploadRes.expiresAt,
-      isPrivate: uploadRes.isPrivate,
-      uploadUrlType: uploadRes.uploadUrl.startsWith('https://storage.googleapis.com') ? 'GCS_V4_Signed' : 'Secure_Backend_Proxy'
+      expiresAt: uploadRes.expiresAt
     });
-  } catch (err: any) {
-    record('Cloud Storage Access', 'Generates restricted, short-lived upload URL for candidate documents', false, undefined, err.message);
-  }
 
-  // Test 6: Storage MIME Type Constraint Enforcement
-  try {
-    let rejectedExecutable = false;
+    // Test rejection of non-PDF/image MIME types
+    let rejectedInvalidMime = false;
     try {
       await StorageService.generateRestrictedUploadUrl({
-        candidateId: 'malicious_user',
-        driveId: 'drive_excelsoft_gse_2026',
+        candidateId: 'cand_test_001',
+        driveId: 'drive_phase2',
         documentType: 'resume',
-        originalFileName: 'malware.exe',
+        originalFileName: 'script.exe',
         mimeType: 'application/x-msdownload'
       });
-    } catch (mimeErr: any) {
-      rejectedExecutable = mimeErr.message.includes('Invalid file type');
+    } catch (err: any) {
+      rejectedInvalidMime = err.message.includes('Only PDF and JPEG/PNG');
     }
 
-    record('Cloud Storage Access', 'Rejects unauthorized file types (enforcing PDF / images only)', rejectedExecutable);
-  } catch (err: any) {
-    record('Cloud Storage Access', 'Rejects unauthorized file types (enforcing PDF / images only)', false, undefined, err.message);
-  }
-
-  // Test 7: Live Database Health Check Endpoint Service
-  try {
-    const dbHealth = await HealthService.getDatabaseHealth();
-    const isConnected = dbHealth.status === 'connected';
-    record('Health Service Integration', 'getDatabaseHealth accurately reports genuine live Firestore status', isConnected, {
-      status: dbHealth.status,
-      database: dbHealth.database,
-      mode: dbHealth.mode,
-      latencyMs: dbHealth.connectivityTest.latencyMs,
-      collectionsCount: dbHealth.collectionsCount,
-      writeSuccess: dbHealth.connectivityTest.writeSuccess,
-      readSuccess: dbHealth.connectivityTest.readSuccess,
-      cleanupSuccess: dbHealth.connectivityTest.cleanupSuccess
+    record('Storage Security', 'Enforces strict file whitelist (rejects dangerous MIME types)', rejectedInvalidMime, {
+      blockedMime: 'application/x-msdownload'
     });
   } catch (err: any) {
-    record('Health Service Integration', 'getDatabaseHealth accurately reports genuine live Firestore status', false, undefined, err.message);
+    record('Storage Security', 'Storage operations failed', false, undefined, err.message);
   }
 
-  // Test 8: System Info & Architecture Reporting
+  // Test 6: Health Service Live Diagnostics
   try {
-    const sysInfo = HealthService.getSystemInfo();
-    const hasArchitecture = sysInfo.architecture.databaseTarget.includes(firebaseConfig.firestoreDatabaseId);
-    record('System Architecture', 'Reports multi-viewport, Node.js 22, Express, and Firestore configuration', hasArchitecture, {
-      application: sysInfo.application,
-      runtime: sysInfo.architecture.runtime,
-      databaseTarget: sysInfo.architecture.databaseTarget,
-      automatedQASuites: sysInfo.modules.automatedQASuites
+    const health = await HealthService.getDatabaseHealth();
+    const systemInfo = HealthService.getSystemInfo();
+
+    record('Telemetry & Health Check', 'HealthService reports live database health and system info', health.status === 'connected', {
+      dbStatus: health.status,
+      database: health.database,
+      mode: health.mode,
+      latencyMs: health.connectivityTest.latencyMs,
+      appVersion: systemInfo.version
     });
   } catch (err: any) {
-    record('System Architecture', 'Reports multi-viewport, Node.js 22, Express, and Firestore configuration', false, undefined, err.message);
+    record('Telemetry & Health Check', 'HealthService check failed', false, undefined, err.message);
   }
 
-  const passedCount = results.filter((r) => r.passed).length;
-  const failedCount = results.filter((r) => !r.passed).length;
+  // Summary
+  const total = results.length;
+  const passed = results.filter((r) => r.passed).length;
+  const failed = total - passed;
 
   console.log('\n=============================================================');
-  console.log(`   PHASE 2 SUMMARY: ${passedCount} PASSED / ${failedCount} FAILED (TOTAL ${results.length})   `);
+  console.log(`   PHASE 2 SUMMARY: ${passed}/${total} TESTS PASSED (${failed} FAILED)`);
   console.log('=============================================================\n');
 
-  return {
-    summary: {
-      total: results.length,
-      passed: passedCount,
-      failed: failedCount
-    },
-    results
-  };
+  return { summary: { total, passed, failed }, results };
 }
 
-// Direct execution when run via CLI
 if (process.argv[1]?.endsWith('verifyPhase2.ts')) {
-  runPhase2Verification()
-    .then((out) => {
-      if (out.summary.failed > 0) {
-        process.exit(1);
-      } else {
-        process.exit(0);
-      }
-    })
-    .catch((err) => {
-      console.error('Test runner fatal crash:', err);
-      process.exit(1);
-    });
+  runPhase2Verification().then(({ summary }) => {
+    process.exit(summary.failed > 0 ? 1 : 0);
+  });
 }

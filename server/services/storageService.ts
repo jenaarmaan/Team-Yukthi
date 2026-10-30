@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { adminStorage, firebaseConfig, getFirebaseGatewayStatus } from '../config/firebase.ts';
+import fs from 'fs';
+import path from 'path';
 import { config } from '../config/env.ts';
 import { logger } from '../utils/logger.ts';
 
@@ -30,6 +31,11 @@ export interface DownloadUrlResponse {
 const SIGNING_SECRET = process.env.STORAGE_SIGNING_SECRET || 'niyojan-storage-signing-secret-2026';
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const UPLOADS_ROOT = path.resolve(process.cwd(), 'data', 'uploads');
+
+if (!fs.existsSync(UPLOADS_ROOT)) {
+  fs.mkdirSync(UPLOADS_ROOT, { recursive: true });
+}
 
 export class StorageService {
   /**
@@ -54,35 +60,7 @@ export class StorageService {
     const expiresMs = Date.now() + 15 * 60 * 1000; // 15 minutes TTL
     const expiresAt = new Date(expiresMs).toISOString();
 
-    const gateway = getFirebaseGatewayStatus();
-
-    // If full service account credentials with private key are available, sign V4 URL
-    if (gateway.hasServiceAccountCredentials) {
-      try {
-        const bucket = adminStorage.bucket();
-        const file = bucket.file(storagePath);
-        const [signedUrl] = await file.getSignedUrl({
-          version: 'v4',
-          action: 'write',
-          expires: expiresMs,
-          contentType: req.mimeType
-        });
-
-        logger.info(`Generated GCS V4 signed upload URL for ${storagePath}`);
-        return {
-          storagePath,
-          uploadUrl: signedUrl,
-          expiresAt,
-          method: 'PUT',
-          headers: { 'Content-Type': req.mimeType },
-          isPrivate: true
-        };
-      } catch (err) {
-        logger.warn('GCS direct V4 signing unavailable; falling back to secure backend proxy URL', { error: String(err) });
-      }
-    }
-
-    // Fallback to cryptographic tamper-proof backend-mediated upload endpoint
+    // Cryptographic tamper-proof backend-mediated upload endpoint
     const hmac = crypto.createHmac('sha256', SIGNING_SECRET);
     hmac.update(`${storagePath}:${req.mimeType}:${expiresMs}:${req.candidateId}`);
     const token = hmac.digest('hex');
@@ -106,27 +84,6 @@ export class StorageService {
   public static async generateRestrictedReadUrl(storagePath: string): Promise<DownloadUrlResponse> {
     const expiresMs = Date.now() + 15 * 60 * 1000;
     const expiresAt = new Date(expiresMs).toISOString();
-    const gateway = getFirebaseGatewayStatus();
-
-    if (gateway.hasServiceAccountCredentials) {
-      try {
-        const bucket = adminStorage.bucket();
-        const file = bucket.file(storagePath);
-        const [signedUrl] = await file.getSignedUrl({
-          version: 'v4',
-          action: 'read',
-          expires: expiresMs
-        });
-
-        return {
-          downloadUrl: signedUrl,
-          expiresAt,
-          isPrivate: true
-        };
-      } catch (err) {
-        logger.warn('GCS direct V4 read signing unavailable; falling back to secure proxy URL', { error: String(err) });
-      }
-    }
 
     const hmac = crypto.createHmac('sha256', SIGNING_SECRET);
     hmac.update(`read:${storagePath}:${expiresMs}`);
@@ -137,5 +94,60 @@ export class StorageService {
       expiresAt,
       isPrivate: true
     };
+  }
+
+  /**
+   * Verifies the authenticity of an upload token.
+   */
+  public static verifyUploadToken(storagePath: string, mimeType: string, expires: string, candidateId: string, token: string): boolean {
+    if (Date.now() > parseInt(expires, 10)) {
+      return false;
+    }
+    const hmac = crypto.createHmac('sha256', SIGNING_SECRET);
+    hmac.update(`${storagePath}:${mimeType}:${expires}:${candidateId}`);
+    const expected = hmac.digest('hex');
+    return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+  }
+
+  /**
+   * Verifies the authenticity of a download token.
+   */
+  public static verifyReadToken(storagePath: string, expires: string, token: string): boolean {
+    if (Date.now() > parseInt(expires, 10)) {
+      return false;
+    }
+    const hmac = crypto.createHmac('sha256', SIGNING_SECRET);
+    hmac.update(`read:${storagePath}:${expires}`);
+    const expected = hmac.digest('hex');
+    return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+  }
+
+  /**
+   * Saves uploaded binary payload to local disk.
+   */
+  public static async saveUploadedFile(storagePath: string, fileBuffer: Buffer): Promise<string> {
+    const safePath = path.normalize(storagePath).replace(/^(\.\.(\/|\\|$))+/, '');
+    const fullPath = path.resolve(UPLOADS_ROOT, safePath);
+    const parentDir = path.dirname(fullPath);
+
+    if (!fs.existsSync(parentDir)) {
+      fs.mkdirSync(parentDir, { recursive: true });
+    }
+
+    await fs.promises.writeFile(fullPath, fileBuffer);
+    logger.info(`File successfully saved to local storage: ${fullPath}`);
+    return fullPath;
+  }
+
+  /**
+   * Retrieves local absolute path for stored file.
+   */
+  public static getLocalFilePath(storagePath: string): string | null {
+    const safePath = path.normalize(storagePath).replace(/^(\.\.(\/|\\|$))+/, '');
+    const fullPath = path.resolve(UPLOADS_ROOT, safePath);
+    if (fs.existsSync(fullPath)) {
+      return fullPath;
+    }
+    return null;
   }
 }

@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import { adminAuth } from '../config/firebase.ts';
 import { UserRole } from '../repositories/types.ts';
 import { AuthenticatedUser } from '../middleware/auth.ts';
 
@@ -65,7 +64,7 @@ export class JwtUtil {
   }
 
   /**
-   * Verifies either a Firebase Admin RS256 ID Token or an HS256 Token.
+   * Verifies an HS256 Token with cryptographic signature check, expiration, and revocation verification.
    */
   public static async verify(token: string): Promise<AuthenticatedUser> {
     if (!token || typeof token !== 'string') {
@@ -88,28 +87,6 @@ export class JwtUtil {
       throw err;
     }
 
-    // Try decoding header to see if it's an RS256 Firebase token
-    try {
-      const headerStr = this.base64UrlDecode(parts[0]);
-      const header = JSON.parse(headerStr);
-
-      if (header.alg === 'RS256') {
-        const decoded = await adminAuth.verifyIdToken(token, true);
-        return {
-          uid: decoded.uid,
-          email: decoded.email || '',
-          role: (decoded.role as UserRole) || 'candidate',
-          displayName: decoded.name || '',
-          emailVerified: decoded.email_verified,
-          customClaims: decoded
-        };
-      }
-    } catch (fbErr: any) {
-      if (fbErr.code?.startsWith('auth/')) {
-        throw fbErr;
-      }
-    }
-
     // Verify HS256 signature
     const [encodedHeader, encodedPayload, signature] = parts;
     const expectedSignature = crypto
@@ -126,7 +103,15 @@ export class JwtUtil {
       throw err;
     }
 
-    const payload: TokenPayload = JSON.parse(this.base64UrlDecode(encodedPayload));
+    let payload: TokenPayload;
+    try {
+      payload = JSON.parse(this.base64UrlDecode(encodedPayload));
+    } catch {
+      const err = new Error('Malformed token payload JSON');
+      (err as any).code = 'auth/argument-error';
+      throw err;
+    }
+
     const now = Math.floor(Date.now() / 1000);
 
     // Check expiration

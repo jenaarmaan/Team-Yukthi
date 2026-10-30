@@ -1,18 +1,4 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  User as FirebaseUser,
-  getIdToken
-} from 'firebase/auth';
 import { CandidateType } from '../types/recruitment';
-import firebaseConfig from '../../firebase-applet-config.json';
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-export const clientAuth = getAuth(app);
 
 export interface CandidateRegistrationInput {
   email: string;
@@ -38,50 +24,50 @@ export interface AuthSessionUser {
 
 type AuthListener = (user: AuthSessionUser | null) => void;
 
+const SESSION_STORAGE_KEY = 'niyojan_jwt_session';
+
 class ClientAuthService {
   private listeners: Set<AuthListener> = new Set();
   private currentUser: AuthSessionUser | null = null;
   private isInitialized = false;
 
   constructor() {
-    // Listen for genuine Firebase Authentication state changes
-    onAuthStateChanged(clientAuth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        try {
-          const idToken = await getIdToken(firebaseUser, false);
-          // Fetch user profile and role from backend
-          const meResponse = await fetch('/api/v1/auth/me', {
-            headers: { Authorization: `Bearer ${idToken}` }
-          });
+    this.restoreSession();
+  }
 
-          if (meResponse.ok) {
-            const meData = await meResponse.json();
-            this.currentUser = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || meData.data?.displayName || '',
-              role: meData.data?.role || 'candidate',
-              idToken
-            };
-          } else {
-            this.currentUser = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || '',
-              role: 'candidate',
-              idToken
-            };
+  private async restoreSession(): Promise<void> {
+    try {
+      const stored = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as AuthSessionUser;
+        if (parsed && parsed.idToken) {
+          // Verify with backend
+          try {
+            const meRes = await fetch('/api/v1/auth/me', {
+              headers: { Authorization: `Bearer ${parsed.idToken}` }
+            });
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              this.currentUser = {
+                ...parsed,
+                role: meData.data?.role || parsed.role,
+                displayName: meData.data?.displayName || parsed.displayName
+              };
+            } else {
+              this.currentUser = null;
+              localStorage.removeItem(SESSION_STORAGE_KEY);
+            }
+          } catch {
+            this.currentUser = parsed;
           }
-        } catch {
-          this.currentUser = null;
         }
-      } else {
-        this.currentUser = null;
       }
-
+    } catch {
+      this.currentUser = null;
+    } finally {
       this.isInitialized = true;
       this.notifyListeners();
-    });
+    }
   }
 
   public subscribe(listener: AuthListener): () => void {
@@ -94,18 +80,37 @@ class ClientAuthService {
 
   private notifyListeners(): void {
     for (const listener of this.listeners) {
-      listener(this.currentUser);
+      try {
+        listener(this.currentUser);
+      } catch {
+        // Safe dispatch
+      }
     }
+  }
+
+  private saveSession(user: AuthSessionUser | null): void {
+    this.currentUser = user;
+    if (user) {
+      try {
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
+      } catch {
+        // Storage quota
+      }
+    } else {
+      try {
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      } catch {
+        // Storage error
+      }
+    }
+    this.notifyListeners();
   }
 
   public getCurrentUser(): AuthSessionUser | null {
     return this.currentUser;
   }
 
-  public async getValidIdToken(forceRefresh = false): Promise<string | null> {
-    if (clientAuth.currentUser) {
-      return getIdToken(clientAuth.currentUser, forceRefresh);
-    }
+  public async getValidIdToken(_forceRefresh = false): Promise<string | null> {
     return this.currentUser?.idToken || null;
   }
 
@@ -123,26 +128,25 @@ class ClientAuthService {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
-          this.currentUser = {
+          const sessionUser: AuthSessionUser = {
             uid: json.data.user.uid,
             email: json.data.user.email,
             displayName: json.data.user.displayName,
             role: json.data.user.role,
             idToken: json.data.idToken
           };
-          this.notifyListeners();
-          return this.currentUser;
+          this.saveSession(sessionUser);
+          return sessionUser;
         }
       }
     } catch {
-      // ignore
+      // Fallback
     }
     return this.currentUser;
   }
 
   /**
-   * Registers a candidate via the backend API (which creates the Auth record + Firestore docs)
-   * and subsequently signs the client into Firebase Authentication.
+   * Registers a candidate via the backend API.
    */
   public async register(input: CandidateRegistrationInput): Promise<AuthSessionUser> {
     const res = await fetch('/api/v1/auth/register-candidate', {
@@ -156,92 +160,73 @@ class ClientAuthService {
       throw new Error(data.error?.message || 'Candidate registration failed.');
     }
 
-    // Sign in immediately with newly created credentials
-    return this.login(input.email, input.password);
+    const sessionUser: AuthSessionUser = {
+      uid: data.data.uid,
+      email: data.data.email,
+      displayName: data.data.displayName,
+      role: data.data.role,
+      idToken: data.data.idToken
+    };
+    this.saveSession(sessionUser);
+    return sessionUser;
   }
 
   /**
-   * Signs in a user using Firebase Authentication.
+   * Signs in a user via the backend API.
    */
   public async login(email: string, password: string): Promise<AuthSessionUser> {
-    try {
-      const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
-      const idToken = await getIdToken(userCredential.user, true);
+    const backendRes = await fetch('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
 
-      // Verify token and fetch role from backend
-      const meRes = await fetch('/api/v1/auth/me', {
-        headers: { Authorization: `Bearer ${idToken}` }
-      });
-
-      const meData = await meRes.json();
-      const role = meData.data?.role || 'candidate';
-
-      this.currentUser = {
-        uid: userCredential.user.uid,
-        email: userCredential.user.email || email,
-        displayName: userCredential.user.displayName || meData.data?.displayName || '',
-        role,
-        idToken
-      };
-
-      this.notifyListeners();
-      return this.currentUser;
-    } catch (firebaseErr: any) {
-      // If client SDK authentication encounters an issue, fall back to backend login endpoint
-      const backendRes = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      const backendData = await backendRes.json();
-      if (!backendRes.ok) {
-        throw new Error(backendData.error?.message || firebaseErr.message || 'Invalid email or password.');
-      }
-
-      this.currentUser = {
-        uid: backendData.data.user.uid,
-        email: backendData.data.user.email,
-        displayName: backendData.data.user.displayName,
-        role: backendData.data.user.role,
-        idToken: backendData.data.idToken
-      };
-
-      this.notifyListeners();
-      return this.currentUser;
+    const backendData = await backendRes.json();
+    if (!backendRes.ok) {
+      throw new Error(backendData.error?.message || 'Invalid email address or password.');
     }
+
+    const sessionUser: AuthSessionUser = {
+      uid: backendData.data.user.uid,
+      email: backendData.data.user.email,
+      displayName: backendData.data.user.displayName,
+      role: backendData.data.user.role,
+      idToken: backendData.data.idToken
+    };
+
+    this.saveSession(sessionUser);
+    return sessionUser;
   }
 
   /**
-   * Signs out the user and revokes local session credentials.
+   * Signs out the user and revokes session credentials.
    */
   public async logout(): Promise<void> {
-    try {
-      await signOut(clientAuth);
-    } catch {
-      // Fallback
+    if (this.currentUser?.idToken) {
+      try {
+        await fetch('/api/v1/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.currentUser.idToken}` }
+        });
+      } catch {
+        // Ignore network failure on logout
+      }
     }
-    this.currentUser = null;
-    this.notifyListeners();
+    this.saveSession(null);
   }
 
   /**
-   * Dispatches genuine Firebase password reset instructions.
+   * Dispatches password reset instructions.
    */
   public async resetPassword(email: string): Promise<void> {
-    try {
-      await sendPasswordResetEmail(clientAuth, email);
-    } catch {
-      // Fallback to backend reset endpoint
-      const res = await fetch('/api/v1/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error?.message || 'Password reset failed.');
-      }
+    const res = await fetch('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error?.message || 'Password reset failed.');
     }
   }
 }

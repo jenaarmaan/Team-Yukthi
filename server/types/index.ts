@@ -32,12 +32,14 @@ export interface HealthResponse {
 
 export interface DatabaseHealthResponse {
   status: 'connected' | 'degraded' | 'pending_provisioning' | 'disconnected';
-  database: 'firebase_firestore';
-  mode: 'production_firestore' | 'staging_storage_ready';
-  phase: string;
-  projectId: string;
-  databaseId: string;
-  storageBucket: string;
+  database: 'sqlite' | 'firebase_firestore';
+  mode: string;
+  phase?: string;
+  databasePath?: string;
+  isWalMode?: boolean;
+  projectId?: string;
+  databaseId?: string;
+  storageBucket?: string;
   collectionsCount: number;
   collections: string[];
   connectivityTest: {
@@ -48,15 +50,15 @@ export interface DatabaseHealthResponse {
     testDocumentPath: string;
   };
   authStatus: {
-    service: 'firebase_auth';
+    service: string;
     tokenVerificationConfigured: boolean;
   };
   storageStatus: {
-    service: 'firebase_storage';
-    bucket: string;
-    uploadMode: 'signed_v4_direct' | 'secure_backend_proxy';
+    service: string;
+    storagePath: string;
+    uploadMode: string;
   };
-  credentials: {
+  credentials?: {
     hasServiceAccount: boolean;
     source: string;
   };

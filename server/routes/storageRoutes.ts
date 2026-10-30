@@ -4,11 +4,13 @@ import { authenticateToken } from '../middleware/auth.ts';
 
 const router = Router();
 
-// Apply authentication to all storage operations
-router.use(authenticateToken);
+// Restricted URL generation (Requires User Bearer Token)
+router.post('/upload-url', authenticateToken, StorageController.generateUploadUrl);
+router.get('/read-url', authenticateToken, StorageController.generateReadUrl);
 
-// Restricted URL generation
-router.post('/upload-url', StorageController.generateUploadUrl);
-router.get('/read-url', StorageController.generateReadUrl);
+// Upload & Download endpoints (Authenticated via cryptographically signed HMAC parameters)
+router.put('/upload', StorageController.handleUpload);
+router.post('/upload', StorageController.handleUpload);
+router.get('/download', StorageController.handleDownload);
 
 export const storageRoutes = router;

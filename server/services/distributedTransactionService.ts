@@ -1,13 +1,7 @@
-import { adminDb, firebaseConfig } from '../config/firebase.ts';
+import { db, runTransaction } from '../config/database.ts';
 import {
   interviewSlotsRepository,
-  applicationsRepository,
-  standbyInvitationsRepository,
-  waitlistsRepository,
-  auditLogsRepository,
-  InterviewSlotDocument,
-  ApplicationDocument,
-  StandbyInvitationDocument
+  InterviewSlotDocument
 } from '../repositories/index.ts';
 import { logger } from '../utils/logger.ts';
 
@@ -20,11 +14,80 @@ export interface TransactionResult<T> {
 
 export class DistributedTransactionService {
   /**
-   * Database-backed atomic lock acquire on Google Cloud Firestore.
-   * Uses Admin SDK OCC transaction when available, or direct Cloud Firestore Atomic Precondition
-   * (currentDocument.exists=false) to guarantee distributed mutex semantics across distinct Cloud Run instances.
-   * NO in-memory JavaScript Set or Map is used as authoritative lock.
+   * Database-backed atomic lock acquire on SQLite.
+   * Uses SQLite table UNIQUE constraints and transactional locks
+   * to guarantee distributed mutex semantics without any external cloud dependency.
    */
+  public static async acquireLock(
+    collection: string,
+    docId: string,
+    holderId: string,
+    additionalData?: Record<string, any>,
+    allowReentry = false
+  ): Promise<{ success: boolean; conflictHolderId?: string }> {
+    const nowIso = new Date().toISOString();
+
+    if (collection === 'idempotency_keys') {
+      try {
+        const stmt = db.prepare(`INSERT INTO idempotency_keys (key, actor_id, created_at) VALUES (?, ?, ?)`);
+        stmt.run(docId, holderId, nowIso);
+        return { success: true };
+      } catch (err: any) {
+        if (err.message?.includes('UNIQUE constraint failed')) {
+          const row = db.prepare(`SELECT actor_id FROM idempotency_keys WHERE key = ?`).get(docId) as any;
+          if (allowReentry && row?.actor_id === holderId) {
+            return { success: true };
+          }
+          return { success: false, conflictHolderId: row?.actor_id || 'duplicate_key' };
+        }
+        logger.error(`SQLite idempotency lock error:`, err);
+        return { success: false, conflictHolderId: 'error' };
+      }
+    }
+
+    if (collection === 'used_attendance_nonces') {
+      try {
+        const stmt = db.prepare(`
+          INSERT INTO used_attendance_nonces (nonce, candidate_id, slot_id, hiring_drive_id, consumed_at)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+        stmt.run(
+          docId,
+          holderId,
+          additionalData?.slotId || null,
+          additionalData?.hiringDriveId || null,
+          nowIso
+        );
+        return { success: true };
+      } catch (err: any) {
+        if (err.message?.includes('UNIQUE constraint failed')) {
+          return { success: false, conflictHolderId: 'already_used_nonce' };
+        }
+        logger.error(`SQLite nonce lock error:`, err);
+        return { success: false, conflictHolderId: 'error' };
+      }
+    }
+
+    // Default to distributed_locks table
+    const lockKey = `${collection}:${docId}`;
+    try {
+      const stmt = db.prepare(`INSERT INTO distributed_locks (lock_key, holder_id, data, acquired_at) VALUES (?, ?, ?, ?)`);
+      stmt.run(lockKey, holderId, JSON.stringify(additionalData || {}), nowIso);
+      return { success: true };
+    } catch (err: any) {
+      if (err.message?.includes('UNIQUE constraint failed')) {
+        const row = db.prepare(`SELECT holder_id FROM distributed_locks WHERE lock_key = ?`).get(lockKey) as any;
+        if (allowReentry && row?.holder_id === holderId) {
+          return { success: true };
+        }
+        return { success: false, conflictHolderId: row?.holder_id || 'concurrent_holder' };
+      }
+      logger.error(`SQLite distributed lock error:`, err);
+      return { success: false, conflictHolderId: 'error' };
+    }
+  }
+
+  // Alias for backward compatibility with existing callers
   public static async acquireFirestoreLock(
     collection: string,
     docId: string,
@@ -32,114 +95,35 @@ export class DistributedTransactionService {
     additionalData?: Record<string, any>,
     allowReentry = false
   ): Promise<{ success: boolean; conflictHolderId?: string }> {
-    const docRef = adminDb.collection(collection).doc(docId);
-    const nowIso = new Date().toISOString();
-
-    // 1. Try Admin SDK OCC Transaction
-    try {
-      const res = await adminDb.runTransaction(async (t) => {
-        const doc = await t.get(docRef);
-        if (doc.exists) {
-          const data = doc.data();
-          const existing = data?.holderId || data?.candidateId;
-          if (!allowReentry || existing !== holderId) {
-            return { success: false, conflictHolderId: existing };
-          }
-        }
-        t.set(docRef, {
-          holderId,
-          docId,
-          acquiredAt: nowIso,
-          ...additionalData
-        });
-        return { success: true };
-      });
-      return res;
-    } catch (err: any) {
-      if (!err.message?.includes('PERMISSION_DENIED')) {
-        logger.warn(`Admin transaction on ${collection}/${docId} caught error:`, err.message);
-      }
-    }
-
-    // 2. Direct Cloud Firestore Atomic Precondition (currentDocument.exists=false)
-    const baseUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents`;
-    const docUrl = `${baseUrl}/${collection}/${docId}?currentDocument.exists=false&key=${firebaseConfig.apiKey}`;
-
-    const fieldsPayload: Record<string, any> = {
-      holderId: { stringValue: holderId },
-      docId: { stringValue: docId },
-      acquiredAt: { stringValue: nowIso }
-    };
-    if (additionalData) {
-      for (const [k, v] of Object.entries(additionalData)) {
-        if (typeof v === 'string') fieldsPayload[k] = { stringValue: v };
-        else if (typeof v === 'number') fieldsPayload[k] = { integerValue: String(v) };
-        else if (typeof v === 'boolean') fieldsPayload[k] = { booleanValue: v };
-      }
-    }
-
-    try {
-      const response = await fetch(docUrl, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fields: fieldsPayload })
-      });
-
-      if (response.ok) {
-        return { success: true };
-      }
-
-      if (response.status === 409) {
-        // Document already exists in Firestore!
-        if (allowReentry) {
-          const checkUrl = `${baseUrl}/${collection}/${docId}?key=${firebaseConfig.apiKey}`;
-          const checkRes = await fetch(checkUrl);
-          if (checkRes.ok) {
-            const existingData = await checkRes.json();
-            const existingHolder = existingData.fields?.holderId?.stringValue || existingData.fields?.candidateId?.stringValue;
-            if (existingHolder === holderId) {
-              return { success: true };
-            }
-            return { success: false, conflictHolderId: existingHolder || 'unknown_candidate' };
-          }
-        }
-        return { success: false, conflictHolderId: 'already_exists_or_concurrent_holder' };
-      }
-    } catch (fetchErr: any) {
-      logger.error(`Direct Cloud Firestore atomic lock error on ${collection}/${docId}:`, fetchErr);
-    }
-
-    // 3. Fallback to server-level in-memory mutex cache when Cloud credentials are not provisioned
-    const lockKey = `${collection}:${docId}`;
-    const existingLock = DistributedTransactionService.inMemoryLocks.get(lockKey);
-    if (existingLock) {
-      if (allowReentry && existingLock.holderId === holderId) {
-        return { success: true };
-      }
-      return { success: false, conflictHolderId: existingLock.holderId };
-    }
-    DistributedTransactionService.inMemoryLocks.set(lockKey, { holderId, acquiredAt: nowIso });
-    return { success: true };
+    return this.acquireLock(collection, docId, holderId, additionalData, allowReentry);
   }
-
-  private static inMemoryLocks: Map<string, { holderId: string; acquiredAt: string }> = new Map();
 
   /**
    * Release database-backed lock.
    */
-  public static async releaseFirestoreLock(collection: string, docId: string): Promise<void> {
-    DistributedTransactionService.inMemoryLocks.delete(`${collection}:${docId}`);
+  public static async releaseLock(collection: string, docId: string): Promise<void> {
     try {
-      await adminDb.collection(collection).doc(docId).delete();
-    } catch {
-      const baseUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents`;
-      await fetch(`${baseUrl}/${collection}/${docId}?key=${firebaseConfig.apiKey}`, { method: 'DELETE' });
+      if (collection === 'idempotency_keys') {
+        db.prepare(`DELETE FROM idempotency_keys WHERE key = ?`).run(docId);
+      } else if (collection === 'used_attendance_nonces') {
+        db.prepare(`DELETE FROM used_attendance_nonces WHERE nonce = ?`).run(docId);
+      } else {
+        const lockKey = `${collection}:${docId}`;
+        db.prepare(`DELETE FROM distributed_locks WHERE lock_key = ?`).run(lockKey);
+      }
+    } catch (err: any) {
+      logger.warn(`Error releasing SQLite lock ${collection}/${docId}:`, err.message);
     }
+  }
+
+  // Alias for backward compatibility
+  public static async releaseFirestoreLock(collection: string, docId: string): Promise<void> {
+    return this.releaseLock(collection, docId);
   }
 
   /**
    * Database-backed atomic claim of a replacement interview slot.
-   * Guarantees that across multiple distributed Cloud Run instances, only one candidate can acquire the slot.
+   * Guarantees that across multiple concurrent requests, only one candidate can acquire the slot.
    */
   public static async claimReplacementSlotTransaction(params: {
     applicationId: string;
@@ -175,8 +159,8 @@ export class DistributedTransactionService {
 
     const sanitizedPanelKey = `${venue.replace(/[^a-zA-Z0-9]/g, '_')}_${date.replace(/[^a-zA-Z0-9]/g, '_')}_${time.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-    // 2. Acquire Slot Lock in Firestore
-    const slotLock = await this.acquireFirestoreLock(
+    // 2. Acquire Slot Lock in SQLite
+    const slotLock = await this.acquireLock(
       'distributed_locks',
       `slot_${slotId}`,
       candidateId,
@@ -191,8 +175,8 @@ export class DistributedTransactionService {
       };
     }
 
-    // 3. Acquire Panel Lock in Firestore
-    const panelLock = await this.acquireFirestoreLock(
+    // 3. Acquire Panel Lock in SQLite
+    const panelLock = await this.acquireLock(
       'distributed_locks',
       `panel_${sanitizedPanelKey}`,
       candidateId,
@@ -201,7 +185,7 @@ export class DistributedTransactionService {
 
     if (!panelLock.success) {
       // Rollback slot lock
-      await this.releaseFirestoreLock('distributed_locks', `slot_${slotId}`);
+      await this.releaseLock('distributed_locks', `slot_${slotId}`);
       return {
         success: false,
         errorCode: 'CONCURRENCY_CONFLICT',
@@ -259,7 +243,7 @@ export class DistributedTransactionService {
     const { panelKey, candidateId, slotId, venue, date, time } = params;
     const sanitizedKey = panelKey.replace(/[^a-zA-Z0-9]/g, '_');
 
-    const result = await this.acquireFirestoreLock(
+    const result = await this.acquireLock(
       'distributed_locks',
       `panel_${sanitizedKey}`,
       candidateId,
@@ -274,7 +258,7 @@ export class DistributedTransactionService {
       };
     }
 
-    return { success: true, data: true, message: 'Panel allocation lock secured in Cloud Firestore.' };
+    return { success: true, data: true, message: 'Panel allocation lock secured in SQLite database.' };
   }
 
   /**
@@ -287,7 +271,7 @@ export class DistributedTransactionService {
     const { candidateId, hiringDriveId } = params;
     const idempotencyKey = `app_${candidateId}_${hiringDriveId}`;
 
-    const result = await this.acquireFirestoreLock(
+    const result = await this.acquireLock(
       'idempotency_keys',
       idempotencyKey,
       candidateId,
@@ -302,6 +286,6 @@ export class DistributedTransactionService {
       };
     }
 
-    return { success: true, data: true, message: 'Idempotency verified in Cloud Firestore.' };
+    return { success: true, data: true, message: 'Idempotency verified in SQLite database.' };
   }
 }

@@ -1,6 +1,4 @@
-import { CollectionReference, DocumentReference, DocumentData } from 'firebase-admin/firestore';
-import { adminDb } from '../config/firebase.ts';
-import { config } from '../config/env.ts';
+import { db } from '../config/database.ts';
 import { NiyojanCollectionName } from './types.ts';
 import { logger } from '../utils/logger.ts';
 
@@ -13,21 +11,18 @@ export enum OperationType {
   WRITE = 'write'
 }
 
-export interface FirestoreErrorInfo {
+export interface RepositoryErrorInfo {
   error: string;
   operationType: OperationType;
   path: string;
   timestamp: string;
 }
 
-export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any }> {
+export class BaseRepository<T extends { id?: string; [key: string]: any }> {
   protected readonly collectionName: NiyojanCollectionName;
-  protected readonly collectionRef: CollectionReference<DocumentData>;
-  private inMemoryCache: Map<string, T> = new Map();
 
   constructor(collectionName: NiyojanCollectionName) {
     this.collectionName = collectionName;
-    this.collectionRef = adminDb.collection(collectionName);
   }
 
   public getCollectionPath(): string {
@@ -35,75 +30,69 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
   }
 
   public async findById(id: string): Promise<T | null> {
-    if (config.firebase.hasServiceAccount) {
-      try {
-        const doc = await this.collectionRef.doc(id).get();
-        if (doc.exists) {
-          return { id: doc.id, ...(doc.data() as any) } as T;
-        }
-      } catch (err: any) {
-        if (!err.message?.includes('PERMISSION_DENIED')) {
-          logger.warn(`Firestore get error on [${this.collectionName}/${id}]:`, err.message);
-        }
+    try {
+      const stmt = db.prepare('SELECT data FROM documents WHERE collection = ? AND id = ?');
+      const row = stmt.get(this.collectionName, id) as any;
+      if (!row) {
+        return null;
       }
+      return JSON.parse(row.data) as T;
+    } catch (err: any) {
+      logger.error(`SQLite findById error on [${this.collectionName}/${id}]:`, err.message);
+      return null;
     }
-
-    // Fallback to cache if service account is pending or document cached
-    const cached = this.inMemoryCache.get(id);
-    return cached ? ({ ...cached } as T) : null;
   }
 
   public async exists(id: string): Promise<boolean> {
-    const item = await this.findById(id);
-    return Boolean(item);
+    try {
+      const stmt = db.prepare('SELECT 1 FROM documents WHERE collection = ? AND id = ?');
+      const row = stmt.get(this.collectionName, id);
+      return Boolean(row);
+    } catch (err: any) {
+      logger.error(`SQLite exists check error on [${this.collectionName}/${id}]:`, err.message);
+      return false;
+    }
   }
 
   public async findAll(limitCount = 50): Promise<T[]> {
-    if (config.firebase.hasServiceAccount) {
-      try {
-        const snapshot = await this.collectionRef.limit(limitCount).get();
-        if (snapshot.docs.length > 0) {
-          return snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...(doc.data() as any)
-          })) as T[];
-        }
-      } catch (err: any) {
-        if (!err.message?.includes('PERMISSION_DENIED')) {
-          logger.warn(`Firestore list error on [${this.collectionName}]:`, err.message);
-        }
-      }
+    try {
+      const stmt = db.prepare('SELECT data FROM documents WHERE collection = ? ORDER BY created_at DESC LIMIT ?');
+      const rows = stmt.all(this.collectionName, limitCount) as any[];
+      return rows.map((r) => JSON.parse(r.data) as T);
+    } catch (err: any) {
+      logger.error(`SQLite findAll error on [${this.collectionName}]:`, err.message);
+      return [];
     }
-
-    return Array.from(this.inMemoryCache.values()).slice(0, limitCount);
   }
 
   public async findByField(field: string, value: any, limitCount = 50): Promise<T[]> {
-    if (config.firebase.hasServiceAccount) {
-      try {
-        const snapshot = await this.collectionRef.where(field, '==', value).limit(limitCount).get();
-        if (snapshot.docs.length > 0) {
-          return snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...(doc.data() as any)
-          })) as T[];
-        }
-      } catch (err: any) {
-        if (!err.message?.includes('PERMISSION_DENIED')) {
-          logger.warn(`Firestore query error on [${this.collectionName} where ${field}==${value}]:`, err.message);
-        }
+    try {
+      const jsonPath = `$.${field}`;
+      let rows: any[] = [];
+
+      if (typeof value === 'string') {
+        const stmt = db.prepare(`SELECT data FROM documents WHERE collection = ? AND LOWER(json_extract(data, ?)) = LOWER(?) LIMIT ?`);
+        rows = stmt.all(this.collectionName, jsonPath, value, limitCount) as any[];
+      } else if (typeof value === 'number') {
+        const stmt = db.prepare(`SELECT data FROM documents WHERE collection = ? AND json_extract(data, ?) = ? LIMIT ?`);
+        rows = stmt.all(this.collectionName, jsonPath, value, limitCount) as any[];
+      } else if (typeof value === 'boolean') {
+        const stmt = db.prepare(`SELECT data FROM documents WHERE collection = ? AND json_extract(data, ?) = ? LIMIT ?`);
+        rows = stmt.all(this.collectionName, jsonPath, value ? 1 : 0, limitCount) as any[];
+      } else {
+        const stmt = db.prepare(`SELECT data FROM documents WHERE collection = ? LIMIT 200`);
+        const all = stmt.all(this.collectionName) as any[];
+        return all
+          .map((r) => JSON.parse(r.data) as T)
+          .filter((item: any) => item[field] === value)
+          .slice(0, limitCount);
       }
+
+      return rows.map((r) => JSON.parse(r.data) as T);
+    } catch (err: any) {
+      logger.error(`SQLite findByField error on [${this.collectionName} where ${field}==${value}]:`, err.message);
+      return [];
     }
-
-    const matches = Array.from(this.inMemoryCache.values()).filter((item: any) => {
-      const itemVal = item[field];
-      if (typeof itemVal === 'string' && typeof value === 'string') {
-        return itemVal.toLowerCase() === value.toLowerCase();
-      }
-      return itemVal === value;
-    });
-
-    return matches.slice(0, limitCount);
   }
 
   public async create(id: string, data: T): Promise<T> {
@@ -113,31 +102,32 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
         cleanData[k] = v;
       }
     }
+    const now = new Date().toISOString();
     if (!cleanData.createdAt) {
-      cleanData.createdAt = new Date().toISOString();
+      cleanData.createdAt = now;
     }
     if (!cleanData.updatedAt) {
-      cleanData.updatedAt = new Date().toISOString();
+      cleanData.updatedAt = now;
     }
 
-    // Always maintain local cache
-    this.inMemoryCache.set(id, { id, ...cleanData } as T);
+    const payload = { id, ...cleanData } as T;
+    const serialized = JSON.stringify(payload);
 
-    if (config.firebase.hasServiceAccount) {
-      // Persist to Cloud Firestore
-      try {
-        await this.collectionRef.doc(id).set(cleanData);
-      } catch (err: any) {
-        if (err.message?.includes('PERMISSION_DENIED')) {
-          // Expected when FIREBASE_SERVICE_ACCOUNT_KEY is awaiting console export
-          logger.debug(`Firestore [${this.collectionName}] create queued in memory cache pending elevated service account credentials.`);
-        } else {
-          logger.warn(`Firestore create error on [${this.collectionName}/${id}]:`, err.message);
-        }
-      }
+    try {
+      const stmt = db.prepare(`
+        INSERT INTO documents (collection, id, data, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(collection, id) DO UPDATE SET
+          data = excluded.data,
+          updated_at = excluded.updated_at
+      `);
+      stmt.run(this.collectionName, id, serialized, cleanData.createdAt, cleanData.updatedAt);
+    } catch (err: any) {
+      logger.error(`SQLite create error on [${this.collectionName}/${id}]:`, err.message);
+      throw err;
     }
 
-    return { id, ...cleanData } as T;
+    return payload;
   }
 
   public async update(id: string, partialData: Partial<T>): Promise<void> {
@@ -145,9 +135,9 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
       throw new Error('Audit logs are append-only and strictly immutable under enterprise governance.');
     }
 
-    const existing = this.inMemoryCache.get(id) || ({} as T);
+    const existing = await this.findById(id);
     const updated: Record<string, any> = {
-      ...existing,
+      ...(existing || {}),
       updatedAt: new Date().toISOString()
     };
     for (const [k, v] of Object.entries(partialData)) {
@@ -155,40 +145,38 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
         updated[k] = v;
       }
     }
-    this.inMemoryCache.set(id, updated as T);
 
-    if (config.firebase.hasServiceAccount) {
-      try {
-        await this.collectionRef.doc(id).update(updated as any);
-      } catch (err: any) {
-        if (!err.message?.includes('PERMISSION_DENIED')) {
-          logger.warn(`Firestore update error on [${this.collectionName}/${id}]:`, err.message);
-        }
-      }
+    const serialized = JSON.stringify(updated);
+    try {
+      const stmt = db.prepare(`
+        INSERT INTO documents (collection, id, data, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(collection, id) DO UPDATE SET
+          data = excluded.data,
+          updated_at = excluded.updated_at
+      `);
+      stmt.run(this.collectionName, id, serialized, updated.createdAt || updated.updatedAt, updated.updatedAt);
+    } catch (err: any) {
+      logger.error(`SQLite update error on [${this.collectionName}/${id}]:`, err.message);
+      throw err;
     }
   }
-
 
   public async delete(id: string): Promise<void> {
     if (this.collectionName === 'audit_logs') {
       throw new Error('Audit logs are append-only and strictly immutable under enterprise governance.');
     }
 
-    this.inMemoryCache.delete(id);
-
-    if (config.firebase.hasServiceAccount) {
-      try {
-        await this.collectionRef.doc(id).delete();
-      } catch (err: any) {
-        if (!err.message?.includes('PERMISSION_DENIED')) {
-          logger.warn(`Firestore delete error on [${this.collectionName}/${id}]:`, err.message);
-        }
-      }
+    try {
+      const stmt = db.prepare('DELETE FROM documents WHERE collection = ? AND id = ?');
+      stmt.run(this.collectionName, id);
+    } catch (err: any) {
+      logger.error(`SQLite delete error on [${this.collectionName}/${id}]:`, err.message);
+      throw err;
     }
   }
-
-
-  public getDocRef(id: string): DocumentReference<DocumentData> {
-    return this.collectionRef.doc(id);
-  }
 }
+
+// Backward-compatible alias for codebase continuity
+export { BaseRepository as BaseFirestoreRepository };
+export type FirestoreErrorInfo = RepositoryErrorInfo;

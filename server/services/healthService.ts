@@ -1,5 +1,5 @@
 import { HealthResponse, DatabaseHealthResponse, SystemInfoResponse } from '../types/index.ts';
-import { getFirebaseGatewayStatus, firebaseConfig, adminDb } from '../config/firebase.ts';
+import { getDatabaseGatewayStatus, db } from '../config/database.ts';
 import { config } from '../config/env.ts';
 import { NIYOJAN_COLLECTION_NAMES } from '../repositories/types.ts';
 import { logger } from '../utils/logger.ts';
@@ -22,11 +22,11 @@ export class HealthService {
   }
 
   /**
-   * Executes a genuine, live database connectivity check against Google Cloud Firestore.
+   * Executes a genuine, live database connectivity check against SQLite.
    * Performs an actual write, read-back verification, and cleanup on a dedicated diagnostic document.
    */
   public static async getDatabaseHealth(): Promise<DatabaseHealthResponse> {
-    const gateway = getFirebaseGatewayStatus();
+    const gateway = getDatabaseGatewayStatus();
     const startTime = Date.now();
     let writeSuccess = false;
     let readSuccess = false;
@@ -35,53 +35,32 @@ export class HealthService {
     const testDocPath = `_health_check/${testDocId}`;
 
     try {
-      if (gateway.hasServiceAccountCredentials) {
-        // Mode A: Firebase Admin SDK Direct Firestore Client
-        const docRef = adminDb.collection('_health_check').doc(testDocId);
-        await docRef.set({
-          service: 'niyojan_health_check',
-          timestamp: new Date().toISOString(),
-          pid: process.pid
-        });
-        writeSuccess = true;
+      // 1. Live write test
+      const insertStmt = db.prepare(`
+        INSERT INTO documents (collection, id, data, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      const now = new Date().toISOString();
+      insertStmt.run(
+        '_health_check',
+        testDocId,
+        JSON.stringify({ service: 'niyojan_health_check', timestamp: now, pid: process.pid }),
+        now,
+        now
+      );
+      writeSuccess = true;
 
-        const snap = await docRef.get();
-        readSuccess = snap.exists;
+      // 2. Live read test
+      const selectStmt = db.prepare('SELECT data FROM documents WHERE collection = ? AND id = ?');
+      const row = selectStmt.get('_health_check', testDocId) as any;
+      readSuccess = Boolean(row && row.data);
 
-        await docRef.delete();
-        cleanupSuccess = true;
-      } else {
-        // Mode B: Provisioned Database REST Protocol Verification
-        const baseUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents`;
-        const docUrl = `${baseUrl}/_health_check/${testDocId}?key=${firebaseConfig.apiKey}`;
-
-        // 1. Live write test
-        const writeRes = await fetch(docUrl, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fields: {
-              service: { stringValue: 'niyojan_health_check' },
-              timestamp: { timestampValue: new Date().toISOString() },
-              pid: { integerValue: String(process.pid) }
-            }
-          })
-        });
-        writeSuccess = writeRes.ok;
-
-        // 2. Live read test
-        if (writeSuccess) {
-          const readRes = await fetch(docUrl);
-          const readData = (await readRes.json()) as any;
-          readSuccess = readRes.ok && Boolean(readData.fields);
-        }
-
-        // 3. Live cleanup test
-        const delRes = await fetch(docUrl, { method: 'DELETE' });
-        cleanupSuccess = delRes.ok;
-      }
+      // 3. Live cleanup test
+      const deleteStmt = db.prepare('DELETE FROM documents WHERE collection = ? AND id = ?');
+      deleteStmt.run('_health_check', testDocId);
+      cleanupSuccess = true;
     } catch (err) {
-      logger.error('Database live health check caught error:', err);
+      logger.error('SQLite live database health check caught error:', err);
     }
 
     const latencyMs = Date.now() - startTime;
@@ -89,12 +68,11 @@ export class HealthService {
 
     return {
       status: isFullyOperational ? 'connected' : 'degraded',
-      database: 'firebase_firestore',
-      mode: 'production_firestore',
-      phase: gateway.phase,
-      projectId: gateway.projectId,
-      databaseId: gateway.firestoreDatabaseId,
-      storageBucket: gateway.storageBucket,
+      database: 'sqlite',
+      mode: 'embedded_acid',
+      phase: 'active_sqlite',
+      databasePath: gateway.databasePath,
+      isWalMode: gateway.isWalMode,
       collectionsCount: NIYOJAN_COLLECTION_NAMES.length,
       collections: [...NIYOJAN_COLLECTION_NAMES],
       connectivityTest: {
@@ -105,27 +83,23 @@ export class HealthService {
         testDocumentPath: testDocPath
       },
       authStatus: {
-        service: 'firebase_auth',
+        service: 'jwt_hs256',
         tokenVerificationConfigured: true
       },
       storageStatus: {
-        service: 'firebase_storage',
-        bucket: gateway.storageBucket,
-        uploadMode: gateway.hasServiceAccountCredentials ? 'signed_v4_direct' : 'secure_backend_proxy'
-      },
-      credentials: {
-        hasServiceAccount: gateway.hasServiceAccountCredentials,
-        source: gateway.credentialSource
+        service: 'local_disk_storage',
+        storagePath: './data/uploads',
+        uploadMode: 'secure_backend_proxy'
       },
       message: isFullyOperational
-        ? `Genuine Cloud Firestore connection verified. Latency: ${latencyMs}ms. Read/Write/Cleanup validated.`
-        : 'Firestore connection experienced degraded response during write/read verification.',
+        ? `SQLite embedded ACID database verified. Latency: ${latencyMs}ms. Read/Write/Cleanup validated in WAL mode.`
+        : 'SQLite database experienced degraded response during write/read verification.',
       timestamp: new Date().toISOString()
     };
   }
 
   public static getSystemInfo(): SystemInfoResponse {
-    const gateway = getFirebaseGatewayStatus();
+    const gateway = getDatabaseGatewayStatus();
     return {
       application: 'NIYOJAN',
       tagline: 'Intelligent Hiring. Seamless Opportunities.',
@@ -136,7 +110,7 @@ export class HealthService {
         runtime: `Node.js ${process.version}`,
         framework: 'Express.js 4.x + TypeScript',
         frontend: 'React 19 + TypeScript + Vite 8',
-        databaseTarget: `Cloud Firestore [${gateway.firestoreDatabaseId}]`
+        databaseTarget: `SQLite Embedded Database [${gateway.databasePath}]`
       },
       viewports: {
         candidateMobile: '390x844px Mobile Viewport with Tab & Action Flows',

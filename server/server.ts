@@ -10,7 +10,7 @@ export const startServer = async () => {
   const PORT = config.port;
   const isDev = config.nodeEnv !== 'production';
 
-  // Seed baseline drives, demo personas, interviewers, and recoveries into Firestore
+  // Seed baseline drives, demo personas, interviewers, and recoveries into SQLite
   await initializeDatabaseSeed();
 
 

@@ -13,7 +13,7 @@ interface TestResult {
 
 export async function runPhase3Verification(): Promise<{ summary: { total: number; passed: number; failed: number }; results: TestResult[] }> {
   const results: TestResult[] = [];
-  const baseUrl = 'http://localhost:3000/api/v1';
+  const baseUrl = process.env.API_BASE_URL || 'http://127.0.0.1:3000/api/v1';
 
   const record = (number: number, name: string, category: TestResult['category'], passed: boolean, details?: any, error?: string) => {
     results.push({ number, name, category, status: passed ? 'passed' : 'failed', details, error });
@@ -276,7 +276,7 @@ export async function runPhase3Verification(): Promise<{ summary: { total: numbe
   // -------------------------------------------------------------------------
   try {
     const token = staffAccounts.interviewer.idToken;
-    // Interviewer allowed: interviewer-only route & viewing notes
+    // Interviewer allowed: interviewer-only route. Forbidden: confidential HR notes & HR-only route
     const intRes = await fetch(`${baseUrl}/admin/interviewer-only`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -288,7 +288,7 @@ export async function runPhase3Verification(): Promise<{ summary: { total: numbe
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    const passed = intRes.status === 200 && notesRes.status === 200 && hrRes.status === 403;
+    const passed = intRes.status === 200 && notesRes.status === 403 && hrRes.status === 403;
     record(9, 'Interviewer permission enforcement: Allowed evaluations, denied HR admin ops', 'rbac', passed, {
       interviewerRouteStatus: intRes.status,
       notesViewStatus: notesRes.status,

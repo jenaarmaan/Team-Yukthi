@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { adminAuth, firebaseConfig, getFirebaseGatewayStatus } from '../config/firebase.ts';
 import { usersRepository, candidateProfilesRepository, auditLogsRepository } from '../repositories/index.ts';
 import { UserRole } from '../repositories/types.ts';
 import { ROLE_PERMISSIONS } from '../middleware/rbacMatrix.ts';
@@ -132,19 +131,6 @@ export class AuthController {
         details: `Candidate registered: ${fullName} (${email})`,
         ipAddress: req.ip
       });
-
-      // 4. Also register with Firebase Admin Auth if connected
-      try {
-        await adminAuth.createUser({
-          uid,
-          email: email.toLowerCase().trim(),
-          displayName: fullName,
-          phoneNumber: phone && phone.startsWith('+') ? phone : undefined
-        });
-        await adminAuth.setCustomUserClaims(uid, { role: 'candidate' });
-      } catch (fbErr) {
-        // Firebase Auth console may not have email/password enabled yet; Firestore record is authoritative
-      }
 
       // Mint valid session token
       const idToken = JwtUtil.sign({
@@ -289,11 +275,6 @@ export class AuthController {
 
     if (req.user?.uid) {
       JwtUtil.revokeUserSessions(req.user.uid);
-      try {
-        await adminAuth.revokeRefreshTokens(req.user.uid);
-      } catch {
-        // Fallback
-      }
     }
 
     sendSuccess(res, { loggedOut: true }, 'Session successfully revoked and invalidated.');
@@ -438,13 +419,6 @@ export class AuthController {
         updatedAt: now
       });
 
-      // Update Firebase Admin custom claims if user exists in Firebase Auth
-      try {
-        await adminAuth.setCustomUserClaims(targetUserId, { role: newRole });
-      } catch {
-        // Fallback
-      }
-
       // Write immutable audit log
       await auditLogsRepository.create(`audit_${Date.now()}`, {
         id: `audit_${Date.now()}`,
@@ -541,16 +515,13 @@ export class AuthController {
    * Auth Gateway Status.
    */
   public static getAuthStatus(req: Request, res: Response): void {
-    const gateway = getFirebaseGatewayStatus();
     sendSuccess(
       res,
       {
-        service: 'firebase_authentication',
-        projectId: gateway.projectId,
-        oAuthClientId: firebaseConfig.oAuthClientId,
+        service: 'jwt_hs256_authentication',
+        database: 'sqlite',
         tokenVerificationActive: true,
-        supportedRoles: Object.keys(ROLE_PERMISSIONS),
-        phase: gateway.phase
+        supportedRoles: Object.keys(ROLE_PERMISSIONS)
       },
       'Auth gateway status active.'
     );

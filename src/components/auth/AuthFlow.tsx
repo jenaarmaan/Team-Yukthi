@@ -152,7 +152,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ onComplete }) => {
         skills: skillsArray.length > 0 ? skillsArray : ['Java', 'SQL', 'Python']
       };
 
-      // 1. Firebase Authentication & Firestore Registration
+      // 1. Candidate Registration & Authentication
       await clientAuthService.register(candidateData);
 
       // 2. Synchronize in-memory candidate profile

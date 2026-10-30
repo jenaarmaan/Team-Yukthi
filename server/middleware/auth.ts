@@ -33,7 +33,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       success: false,
       error: {
         code: 'auth/unauthorized',
-        message: 'Authentication required. Authorization header must contain Bearer <Firebase_ID_Token>.'
+        message: 'Authentication required. Authorization header must contain Bearer <ID_Token>.'
       },
       timestamp: new Date().toISOString()
     });
@@ -69,9 +69,9 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       error: {
         code: error.code || 'auth/invalid-token',
         message: isExpired
-          ? 'Firebase ID token has expired. Please refresh your session.'
+          ? 'Session token has expired. Please refresh your session.'
           : isRevoked
-          ? 'Firebase session has been revoked upon logout. Please sign in again.'
+          ? 'Session has been revoked upon logout. Please sign in again.'
           : 'Invalid or forged authentication credentials.'
       },
       timestamp: new Date().toISOString()

@@ -79,8 +79,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         <div className="flex items-center justify-between px-3.5 py-2 bg-indigo-50/70 border border-indigo-100 rounded-lg text-xs">
           <div className="flex items-center gap-2 text-indigo-900 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Phase 2 Infrastructure:</span>
-            <span className="font-bold text-indigo-700">Google Cloud Firestore Connected</span>
+            <span>Persistence Engine:</span>
+            <span className="font-bold text-indigo-700">SQLite Database Connected (Embedded ACID)</span>
             {dbStatus.latencyMs && (
               <span className="text-[11px] font-mono text-indigo-500 bg-white px-1.5 py-0.5 rounded border border-indigo-200">
                 {dbStatus.latencyMs}ms latency
@@ -88,13 +88,13 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             )}
             <span className="text-slate-400">•</span>
             <span className="text-slate-600 font-mono text-[11px] truncate max-w-xs">
-              db: {dbStatus.databaseId}
+              mode: WAL ACID
             </span>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-indigo-700 font-semibold">
-            <span>14 Schemas Bootstrapped</span>
+            <span>19 Collections Active</span>
             <span className="text-slate-300">|</span>
-            <span>Zero-Trust Security Rules Active</span>
+            <span>Zero External Cloud Latency</span>
           </div>
         </div>
       )}

@@ -1,6 +1,4 @@
 import crypto from 'crypto';
-import { adminDb } from '../config/firebase.ts';
-import { logger } from '../utils/logger.ts';
 import { DistributedTransactionService } from './distributedTransactionService.ts';
 
 const QR_HMAC_SECRET = process.env.QR_HMAC_SECRET || 'niyojan-venue-qr-secret-key-2026-secure-hmac';
@@ -138,8 +136,8 @@ export class QrSecurityService {
       };
     }
 
-    // 5. Transactional Replay Prevention: Check single-use nonce via Cloud Firestore transactional lock
-    const nonceResult = await DistributedTransactionService.acquireFirestoreLock(
+    // 5. Transactional Replay Prevention: Check single-use nonce via SQLite transactional lock
+    const nonceResult = await DistributedTransactionService.acquireLock(
       'used_attendance_nonces',
       payload.nonce,
       payload.candidateId,
