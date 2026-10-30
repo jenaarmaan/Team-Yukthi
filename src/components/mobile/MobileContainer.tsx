@@ -6,13 +6,15 @@ interface MobileContainerProps {
   activeScenarioName: string;
   onOpenScenarioSwitcher: () => void;
   onSwitchToAdmin?: () => void;
+  onSwitchToHome?: () => void;
 }
 
 export const MobileContainer: React.FC<MobileContainerProps> = ({
   children,
   activeScenarioName,
   onOpenScenarioSwitcher,
-  onSwitchToAdmin
+  onSwitchToAdmin,
+  onSwitchToHome
 }) => {
   const [deviceFrameMode, setDeviceFrameMode] = useState<boolean>(true);
   const currentTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -22,12 +24,22 @@ export const MobileContainer: React.FC<MobileContainerProps> = ({
       {/* Top Bar for Desktop Preview: Mode Switcher, Admin Switcher & Active Persona Indicator */}
       <div className="flex items-center justify-between w-full max-w-md mb-2.5 px-2 text-xs text-slate-300">
         <div className="flex items-center gap-2">
+          {onSwitchToHome && (
+            <button
+              onClick={onSwitchToHome}
+              className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] border border-slate-700 flex items-center gap-1.5 transition-all shadow-xs"
+              title="Return to Public Homepage"
+            >
+              <span>🏠 Public Home</span>
+            </button>
+          )}
+
           {onSwitchToAdmin && (
             <button
               onClick={onSwitchToAdmin}
               className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold text-[11px] border border-slate-700 flex items-center gap-1.5 transition-all shadow-xs"
             >
-              <span>🏢 HR Admin Portal</span>
+              <span>🏢 HR Admin</span>
             </button>
           )}
         </div>

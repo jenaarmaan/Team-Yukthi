@@ -32,12 +32,14 @@ import {
   X,
   Bell,
   Search,
-  FlaskConical
+  FlaskConical,
+  Home
 } from 'lucide-react';
 
 interface AdminLayoutProps {
   onSwitchToCandidateApp: () => void;
   onSwitchToInterviewer?: () => void;
+  onSwitchToHome?: () => void;
 }
 
 export type AdminTab =
@@ -54,7 +56,11 @@ export type AdminTab =
   | 'analytics'
   | 'qa-tests';
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ onSwitchToCandidateApp, onSwitchToInterviewer }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({
+  onSwitchToCandidateApp,
+  onSwitchToInterviewer,
+  onSwitchToHome
+}) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [, setTick] = useState(0);
@@ -121,6 +127,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onSwitchToCandidateApp
 
         {/* Center/Right: App Switcher & Role Selector */}
         <div className="flex items-center gap-2.5">
+          {/* Public Home Portal Switcher */}
+          {onSwitchToHome && (
+            <button
+              onClick={onSwitchToHome}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors"
+              title="Return to Public Homepage"
+            >
+              <Home className="w-3.5 h-3.5 text-slate-500" />
+              <span className="hidden sm:inline">Public Home</span>
+            </button>
+          )}
+
           {/* Dedicated Interviewer Workspace Switcher */}
           {onSwitchToInterviewer && (
             <button

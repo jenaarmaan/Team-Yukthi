@@ -34,10 +34,18 @@ export const initializeDatabase = (): void => {
   try {
     // 1. Pragmas for concurrency and durability
     db.exec(`
-      PRAGMA journal_mode = WAL;
-      PRAGMA synchronous = NORMAL;
-      PRAGMA foreign_keys = ON;
+      PRAGMA busy_timeout = 5000;
     `);
+
+    try {
+      db.exec(`
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+        PRAGMA foreign_keys = ON;
+      `);
+    } catch {
+      // Ignore if another worker already set WAL mode
+    }
 
     // 2. Primary polymorphic document store for all 19 NIYOJAN collections
     db.exec(`

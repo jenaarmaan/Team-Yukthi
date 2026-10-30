@@ -32,12 +32,14 @@ import {
   Smartphone,
   ShieldCheck,
   Building2,
-  RefreshCw
+  RefreshCw,
+  Home
 } from 'lucide-react';
 
 interface InterviewerLayoutProps {
   onSwitchToAdmin: () => void;
   onSwitchToCandidateApp: () => void;
+  onSwitchToHome?: () => void;
 }
 
 export type InterviewerNavTab =
@@ -53,7 +55,8 @@ export type InterviewerNavTab =
 
 export const InterviewerLayout: React.FC<InterviewerLayoutProps> = ({
   onSwitchToAdmin,
-  onSwitchToCandidateApp
+  onSwitchToCandidateApp,
+  onSwitchToHome
 }) => {
   const [activeTab, setActiveTab] = useState<InterviewerNavTab>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -147,6 +150,18 @@ export const InterviewerLayout: React.FC<InterviewerLayoutProps> = ({
 
         {/* Right: Platform Switcher & Interviewer Pill */}
         <div className="flex items-center gap-3">
+          {/* Public Home Portal */}
+          {onSwitchToHome && (
+            <button
+              onClick={onSwitchToHome}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
+              title="Return to Public Homepage"
+            >
+              <Home className="w-3.5 h-3.5 text-slate-500" />
+              <span className="hidden sm:inline">Public Home</span>
+            </button>
+          )}
+
           {/* Switch to HR Admin */}
           <button
             onClick={onSwitchToAdmin}
