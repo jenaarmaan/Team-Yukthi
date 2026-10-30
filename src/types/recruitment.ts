@@ -330,3 +330,187 @@ export interface InternalCandidateNote {
   note: string;
   createdAt: string;
 }
+
+// --- Dedicated Interviewer Workspace Types ---
+
+export interface EvaluationCriteriaScore {
+  criterionId: string;
+  name: string;
+  category: 'technical' | 'communication' | 'problem_solving' | 'coding' | 'role_specific';
+  rating: number; // 1 to 5
+  observation: string;
+  evidenceNotes?: string;
+}
+
+export type InterviewRecommendation =
+  | 'select'
+  | 'reject'
+  | 'hold'
+  | 'recommend_other_role'
+  | 'recommend_next_round';
+
+export interface InterviewEvaluation {
+  id: string;
+  applicationId: string;
+  candidateId: string;
+  candidateName: string;
+  hiringDriveId: string;
+  slotId: string;
+  interviewerId: string;
+  interviewerName: string;
+  interviewerRole: string;
+  roundName: string;
+  criteriaScores: EvaluationCriteriaScore[];
+  strengths: string[];
+  areasOfImprovement: string[];
+  overallSummary: string;
+  recommendation: InterviewRecommendation;
+  recommendationReason: string;
+  status: 'draft' | 'submitted';
+  submittedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InterviewerAvailability {
+  id: string;
+  interviewerId: string;
+  date: string;
+  status: 'available' | 'busy' | 'break' | 'leave' | 'emergency_unavailable';
+  startTime?: string;
+  endTime?: string;
+  note?: string;
+  leaveType?: 'sick' | 'personal' | 'emergency' | 'work_conflict';
+  approvalStatus?: 'approved' | 'pending' | 'rejected';
+  approvedByAdminId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ConflictCategory =
+  | 'personal_relationship'
+  | 'previous_professional'
+  | 'reporting_hierarchy'
+  | 'financial_interest'
+  | 'academic_affiliation'
+  | 'other';
+
+export interface InterviewerConflict {
+  id: string;
+  interviewerId: string;
+  interviewerName: string;
+  candidateId: string;
+  candidateName: string;
+  applicationId: string;
+  slotId: string;
+  hiringDriveId: string;
+  category: ConflictCategory;
+  confidentialReason: string;
+  status: 'declared' | 'under_review' | 'reassigned' | 'rejected' | 'resolved';
+  reassignedToInterviewerId?: string;
+  reassignedToInterviewerName?: string;
+  reviewedByAdminId?: string;
+  reviewedAt?: string;
+  resolutionNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type IncidentCategory =
+  | 'network_connectivity'
+  | 'audio_video_failure'
+  | 'candidate_unresponsive'
+  | 'venue_overlap'
+  | 'assessment_platform_error'
+  | 'identity_discrepancy'
+  | 'other';
+
+export interface InterviewerIncident {
+  id: string;
+  interviewerId: string;
+  interviewerName: string;
+  applicationId?: string;
+  candidateId?: string;
+  candidateName?: string;
+  slotId?: string;
+  hiringDriveId: string;
+  category: IncidentCategory;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  status: 'reported' | 'investigating' | 'resolved' | 'acknowledged';
+  resolutionNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QuestionItem {
+  id: string;
+  topic: string;
+  category: 'technical' | 'coding' | 'problem_solving' | 'role_specific' | 'behavioral' | 'follow_up';
+  difficulty: 'entry' | 'intermediate' | 'advanced';
+  question: string;
+  expectedKeyPoints: string[];
+  codeSnippet?: string;
+  relevantSkills: string[];
+}
+
+export interface QuestionBank {
+  id: string;
+  role: string;
+  interviewRound: string;
+  questions: QuestionItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InterviewerCandidateSnapshot {
+  candidateId: string;
+  applicationId: string;
+  hiringDriveId: string;
+  hiringDriveTitle: string;
+  role: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  candidateType: CandidateType;
+  currentLocation: string;
+  education: {
+    institution: string;
+    degree: string;
+    branch: string;
+    graduationYear: number;
+    cgpa: number;
+    verified: boolean;
+  };
+  workExperience: Array<{
+    organization: string;
+    jobTitle: string;
+    durationMonths: number;
+    description: string;
+    relevantSkills: string[];
+  }>;
+  skills: Array<{
+    id: string;
+    name: string;
+    category: string;
+    verificationLevel: SkillVerificationLevel;
+    rating?: number;
+  }>;
+  resumeFileName?: string;
+  resumeSummary?: string;
+  assessmentScores?: {
+    technicalScore?: number;
+    codingPercentile?: number;
+    problemSolvingRating?: string;
+    verifiedAt?: string;
+  };
+  slotInfo: {
+    slotId: string;
+    date: string;
+    time: string;
+    venue: string;
+    roomOrPanel: string;
+    attendanceVerified: boolean;
+    reportingStatus: 'on_time' | 'delayed' | 'checked_in_at_desk' | 'pending';
+  };
+}

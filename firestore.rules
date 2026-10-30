@@ -246,6 +246,40 @@ service cloud.firestore {
     match /used_attendance_nonces/{nonceId} {
       allow read, write: if isValidId(nonceId);
     }
+
+    // 18. INTERVIEW EVALUATIONS (Strictly Forbidden to Candidates)
+    match /interview_evaluations/{evalId} {
+      allow get: if isValidId(evalId) && (isAdmin() || (isInterviewerOrCoordinator() && resource.data.interviewerId == request.auth.uid));
+      allow list: if isAdmin() || isInterviewerOrCoordinator();
+      allow create, update: if isValidId(evalId) && (isAdmin() || (isInterviewerOrCoordinator() && incoming().interviewerId == request.auth.uid));
+      allow delete: if isValidId(evalId) && isAdmin();
+    }
+
+    // 19. INTERVIEWER AVAILABILITY
+    match /interviewer_availability/{availId} {
+      allow read: if isValidId(availId) && (isAdmin() || isInterviewerOrCoordinator());
+      allow write: if isValidId(availId) && (isAdmin() || (isInterviewerOrCoordinator() && incoming().interviewerId == request.auth.uid));
+    }
+
+    // 20. CONFIDENTIAL CONFLICTS OF INTEREST (Restricted to Declarant & HR Admin)
+    match /interviewer_conflicts/{conflictId} {
+      allow get: if isValidId(conflictId) && (isAdmin() || (isSignedIn() && resource.data.interviewerId == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.interviewerId == request.auth.uid);
+      allow create: if isValidId(conflictId) && isInterviewerOrCoordinator() && incoming().interviewerId == request.auth.uid;
+      allow update, delete: if isValidId(conflictId) && isAdmin();
+    }
+
+    // 21. INTERVIEWER INCIDENTS
+    match /interviewer_incidents/{incidentId} {
+      allow read: if isValidId(incidentId) && (isAdmin() || isInterviewerOrCoordinator());
+      allow write: if isValidId(incidentId) && (isAdmin() || isInterviewerOrCoordinator());
+    }
+
+    // 22. QUESTION BANKS
+    match /question_banks/{bankId} {
+      allow read: if isValidId(bankId) && (isAdmin() || isInterviewerOrCoordinator());
+      allow write: if isValidId(bankId) && isAdmin();
+    }
   }
 }
 

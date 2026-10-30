@@ -13,7 +13,12 @@ import {
   InternalHRNoteDocument,
   InterviewerPanelDocument,
   SlotRecoveryIncidentDocument,
-  NotificationDocument
+  NotificationDocument,
+  InterviewEvaluationDocument,
+  InterviewerAvailabilityDocument,
+  InterviewerConflictDocument,
+  InterviewerIncidentDocument,
+  QuestionBankDocument
 } from './types.ts';
 
 export * from './types.ts';
@@ -34,6 +39,11 @@ export const internalHRNotesRepository = new BaseFirestoreRepository<InternalHRN
 export const interviewerPanelsRepository = new BaseFirestoreRepository<InterviewerPanelDocument>('interviewer_panels');
 export const slotRecoveryIncidentsRepository = new BaseFirestoreRepository<SlotRecoveryIncidentDocument>('slot_recovery_incidents');
 export const notificationsRepository = new BaseFirestoreRepository<NotificationDocument>('notifications');
+export const interviewEvaluationsRepository = new BaseFirestoreRepository<InterviewEvaluationDocument>('interview_evaluations');
+export const interviewerAvailabilityRepository = new BaseFirestoreRepository<InterviewerAvailabilityDocument>('interviewer_availability');
+export const interviewerConflictsRepository = new BaseFirestoreRepository<InterviewerConflictDocument>('interviewer_conflicts');
+export const interviewerIncidentsRepository = new BaseFirestoreRepository<InterviewerIncidentDocument>('interviewer_incidents');
+export const questionBanksRepository = new BaseFirestoreRepository<QuestionBankDocument>('question_banks');
 
 export const repositories = {
   users: usersRepository,
@@ -49,5 +59,10 @@ export const repositories = {
   internalHRNotes: internalHRNotesRepository,
   interviewerPanels: interviewerPanelsRepository,
   slotRecoveryIncidents: slotRecoveryIncidentsRepository,
-  notifications: notificationsRepository
+  notifications: notificationsRepository,
+  interviewEvaluations: interviewEvaluationsRepository,
+  interviewerAvailability: interviewerAvailabilityRepository,
+  interviewerConflicts: interviewerConflictsRepository,
+  interviewerIncidents: interviewerIncidentsRepository,
+  questionBanks: questionBanksRepository
 };

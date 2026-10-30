@@ -42,12 +42,12 @@ export async function runPhase2Verification(): Promise<{ summary: { total: numbe
     record('Firebase Admin SDK', 'Initializes Admin App with Project & Named Database', false, undefined, err.message);
   }
 
-  // Test 2: 14 Firestore Collection Definitions & Typed Repositories
+  // Test 2: Firestore Collection Definitions & Typed Repositories
   try {
     const totalCollections = NIYOJAN_COLLECTION_NAMES.length;
     const repoKeys = Object.keys(repositories);
-    const passed = totalCollections === 14 && repoKeys.length === 14;
-    record('Firestore Schema & Repositories', 'All 14 NIYOJAN collections typed and initialized', passed, {
+    const passed = totalCollections >= 14 && repoKeys.length === totalCollections;
+    record('Firestore Schema & Repositories', 'All NIYOJAN collections typed and initialized', passed, {
       totalCollections,
       collections: NIYOJAN_COLLECTION_NAMES,
       repositoriesMapped: repoKeys.length

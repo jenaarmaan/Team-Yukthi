@@ -37,6 +37,7 @@ import {
 
 interface AdminLayoutProps {
   onSwitchToCandidateApp: () => void;
+  onSwitchToInterviewer?: () => void;
 }
 
 export type AdminTab =
@@ -53,7 +54,7 @@ export type AdminTab =
   | 'analytics'
   | 'qa-tests';
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ onSwitchToCandidateApp }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ onSwitchToCandidateApp, onSwitchToInterviewer }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [, setTick] = useState(0);
@@ -84,6 +85,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onSwitchToCandidateApp
 
   const handleRoleChange = (role: AdminRole) => {
     recruitmentService.switchAdminRole(role);
+    if (role === 'interviewer' && onSwitchToInterviewer) {
+      onSwitchToInterviewer();
+    }
   };
 
   return (
@@ -117,6 +121,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onSwitchToCandidateApp
 
         {/* Center/Right: App Switcher & Role Selector */}
         <div className="flex items-center gap-2.5">
+          {/* Dedicated Interviewer Workspace Switcher */}
+          {onSwitchToInterviewer && (
+            <button
+              onClick={onSwitchToInterviewer}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs shadow-2xs transition-colors"
+              title="Open Dedicated Interviewer Workspace"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span className="hidden sm:inline">Interviewer Workspace</span>
+            </button>
+          )}
+
           {/* Global View Switcher: Back to Candidate Mobile App */}
           <button
             onClick={onSwitchToCandidateApp}

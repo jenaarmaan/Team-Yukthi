@@ -10,7 +10,10 @@ import {
   interviewerPanelsRepository,
   slotRecoveryIncidentsRepository,
   notificationsRepository,
-  usersRepository
+  usersRepository,
+  interviewEvaluationsRepository,
+  interviewerAvailabilityRepository,
+  questionBanksRepository
 } from '../repositories/index.ts';
 import { SEED_HIRING_DRIVES, DEMO_PERSONAS } from '../../src/data/seedData.ts';
 import { logger } from '../utils/logger.ts';
@@ -412,6 +415,122 @@ export async function initializeDatabaseSeed(): Promise<void> {
           });
         }
       }
+    }
+
+    // 5. Seed Interviewer Availability
+    const defaultAvailabilities = [
+      {
+        id: 'avail_int_01_2026-11-20',
+        interviewerId: 'int_01',
+        date: '2026-11-20',
+        status: 'available' as const,
+        startTime: '09:00 AM',
+        endTime: '05:00 PM',
+        note: 'Full day technical panel evaluations (Mysuru Campus)',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'avail_int_01_2026-11-21',
+        interviewerId: 'int_01',
+        date: '2026-11-21',
+        status: 'break' as const,
+        startTime: '01:00 PM',
+        endTime: '02:00 PM',
+        note: 'Scheduled lunch & evaluation review buffer',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'avail_int_02_2026-11-20',
+        interviewerId: 'int_02',
+        date: '2026-11-20',
+        status: 'available' as const,
+        startTime: '10:00 AM',
+        endTime: '06:00 PM',
+        note: 'Frontend UI micro-architectures panel',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+
+    for (const av of defaultAvailabilities) {
+      const exists = await interviewerAvailabilityRepository.findById(av.id);
+      if (!exists) {
+        await interviewerAvailabilityRepository.create(av.id, av);
+      }
+    }
+
+    // 6. Seed Sample Interview Evaluation
+    const sampleEval = {
+      id: 'eval_slot_01_int_01',
+      applicationId: 'app_rohan_001',
+      candidateId: 'cand_rohan_sharma',
+      candidateName: 'Rohan Sharma',
+      hiringDriveId: 'drive_excelsoft_gse_2026',
+      slotId: 'slot_01',
+      interviewerId: 'int_01',
+      interviewerName: 'Dr. Murali Krishna',
+      interviewerRole: 'Principal Architect & Technical Director',
+      roundName: 'Technical Interview Round 1 (DSA & System Basics)',
+      criteriaScores: [
+        {
+          criterionId: 'crit_1',
+          name: 'Technical Knowledge',
+          category: 'technical' as const,
+          rating: 4,
+          observation: 'Strong grasp of Java memory model and core JVM garbage collection mechanics.',
+          evidenceNotes: 'Correctly explained volatile happens-before memory visibility.'
+        },
+        {
+          criterionId: 'crit_2',
+          name: 'Problem Solving & DSA',
+          category: 'problem_solving' as const,
+          rating: 5,
+          observation: 'Optimal Floyd cycle detection with mathematical proof of loop start meeting point.',
+          evidenceNotes: 'Wrote clean O(n) pointer code without edge case regression.'
+        },
+        {
+          criterionId: 'crit_3',
+          name: 'Practical Coding Skills',
+          category: 'coding' as const,
+          rating: 4,
+          observation: 'Clean syntax, modular functions, and thoughtful naming conventions.'
+        },
+        {
+          criterionId: 'crit_4',
+          name: 'Communication & Articulation',
+          category: 'communication' as const,
+          rating: 4,
+          observation: 'Articulated design trade-offs clearly before writing code.'
+        },
+        {
+          criterionId: 'crit_5',
+          name: 'Role-Specific Competency',
+          category: 'role_specific' as const,
+          rating: 4,
+          observation: 'Very high alignment with Excelsoft cloud assessment engine requirements.'
+        }
+      ],
+      strengths: [
+        'Exceptional algorithmic rigor in graph and pointer traversals',
+        'Demonstrated understanding of distributed transaction atomicity'
+      ],
+      areasOfImprovement: [
+        'Deepen familiarity with Spring Boot WebFlux asynchronous reactive streams'
+      ],
+      overallSummary: 'High-caliber engineering candidate with solid CS fundamentals and rapid problem assimilation.',
+      recommendation: 'recommend_next_round' as const,
+      recommendationReason: 'Cleared DSA and System Basics with distinction (94th percentile). Ready for System Architecture Round 2.',
+      status: 'submitted' as const,
+      submittedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const evalExists = await interviewEvaluationsRepository.findById(sampleEval.id);
+    if (!evalExists) {
+      await interviewEvaluationsRepository.create(sampleEval.id, sampleEval);
     }
 
     logger.info('NIYOJAN Database initial seed verified successfully.');

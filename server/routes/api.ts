@@ -12,6 +12,7 @@ import { absenceRoutes } from './absenceRoutes.ts';
 import { attendanceRoutes } from './attendanceRoutes.ts';
 import { notesRoutes } from './notesRoutes.ts';
 import { interviewerRoutes } from './interviewerRoutes.ts';
+import { interviewerWorkspaceRoutes } from './interviewerWorkspaceRoutes.ts';
 import { notificationRoutes } from './notificationRoutes.ts';
 
 const router = Router();
@@ -59,6 +60,7 @@ router.use('/absence', absenceRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/notes', notesRoutes);
 router.use('/interviewers', interviewerRoutes);
+router.use('/interviewer', interviewerWorkspaceRoutes);
 router.use('/notifications', notificationRoutes);
 
 export const apiRouter = router;

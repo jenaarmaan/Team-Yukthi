@@ -15,7 +15,13 @@ import {
   SkillVerificationLevel,
   MatchScoreBreakdown,
   ServiceResult,
-  NotificationDeliveryChannel
+  NotificationDeliveryChannel,
+  InterviewEvaluation,
+  InterviewerAvailability,
+  InterviewerConflict,
+  InterviewerIncident,
+  QuestionItem,
+  InterviewerCandidateSnapshot
 } from '../types/recruitment';
 import { SEED_HIRING_DRIVES, DEMO_PERSONAS, DemoPersona } from '../data/seedData';
 import { apiClient } from './apiClient';
@@ -56,6 +62,11 @@ class RecruitmentService {
   private auditLogs: AuditLogEntry[] = [];
   private internalNotes: InternalCandidateNote[] = [];
   private interviewers: InterviewerProfile[] = [];
+  private activeInterviewerId: string = 'int_01';
+  private evaluations: InterviewEvaluation[] = [];
+  private availabilities: InterviewerAvailability[] = [];
+  private conflicts: InterviewerConflict[] = [];
+  private incidents: InterviewerIncident[] = [];
   private vacantSlotRecoveries: VacantSlotRecovery[] = [];
   private listeners: (() => void)[] = [];
   private syncInterval: any = null;
@@ -2241,6 +2252,266 @@ class RecruitmentService {
 
     this.notify();
     return newInt;
+  }
+
+  // ==========================================
+  // DEDICATED INTERVIEWER WORKSPACE METHODS
+  // ==========================================
+
+  public getActiveInterviewer(): InterviewerProfile {
+    const found = this.interviewers.find((i) => i.id === this.activeInterviewerId);
+    return found || this.interviewers[0] || {
+      id: 'int_01',
+      name: 'Dr. Murali Krishna',
+      email: 'murali.k@excelsoftcorp.com',
+      role: 'Principal Architect & Technical Director',
+      department: 'Architecture & Scalability Lab',
+      skills: ['Java', 'Cloud Architecture', 'Distributed Systems', 'DSA'],
+      assignedPanel: 'Panel 1 (System Architecture)',
+      location: 'Mysuru',
+      activeInterviewsCount: 3,
+      availableDays: ['Nov 16, 2026', 'Nov 20, 2026', 'Nov 28, 2026']
+    };
+  }
+
+  public setActiveInterviewer(id: string): void {
+    this.activeInterviewerId = id;
+    this.notify();
+  }
+
+  public async fetchInterviewerSummary(): Promise<any> {
+    const res = await apiClient.get<any>('/interviewer/workspace/summary');
+    if (res.success && res.data) {
+      return res.data;
+    }
+    // Fallback based on local data
+    const interviewer = this.getActiveInterviewer();
+    const confirmedApps = this.getAllApplications().filter((a) => a.status === 'confirmed');
+    return {
+      interviewer,
+      todayAssignedCount: Math.min(3, confirmedApps.length),
+      completedTodayCount: 1,
+      inProgressCount: 0,
+      pendingEvaluationsCount: 2,
+      remainingDailyCapacity: 4,
+      totalInterviewHours: 1.0,
+      activeRecoveryAlertsCount: this.getVacantSlotRecoveries().filter((r) => r.status === 'vacant').length,
+      interviewerAvailabilityToday: 'available'
+    };
+  }
+
+  public async fetchInterviewerTodaySchedule(dateFilter?: string, search?: string): Promise<any[]> {
+    const res = await apiClient.get<any[]>('/interviewer/schedule/today', { dateFilter, search });
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data;
+    }
+
+    // Local fallback enriched schedule
+    const interviewer = this.getActiveInterviewer();
+    const confirmedApps = this.getAllApplications().filter((a) => a.status === 'confirmed');
+    return confirmedApps.map((app, idx) => ({
+      slotId: app.interviewSlot?.id || `slot_fallback_${idx}`,
+      applicationId: app.id,
+      candidateId: app.candidateProfile.id,
+      candidateName: app.candidateProfile.fullName,
+      candidateType: app.candidateProfile.candidateType,
+      hiringDriveId: app.hiringDriveId,
+      hiringDriveTitle: app.hiringDriveTitle,
+      role: app.role,
+      location: app.appliedLocation || 'Mysuru Campus',
+      roomOrPanel: app.interviewSlot?.roomOrPanel || interviewer.assignedPanel,
+      date: app.interviewSlot?.date || 'Saturday, Nov 20, 2026',
+      time: app.interviewSlot?.time || (idx === 0 ? '10:00 AM - 11:00 AM' : '11:30 AM - 12:30 PM'),
+      reportingTime: app.interviewSlot?.reportingTime || '09:30 AM',
+      interviewRound: 'Technical Interview Round 1 (DSA & System Basics)',
+      attendanceVerified: Boolean(app.interviewSlot?.attendanceVerified),
+      executionStatus: app.interviewSlot?.attendanceVerified ? 'candidate_present' : 'scheduled',
+      evaluationStatus: idx === 0 ? 'submitted' : 'not_started',
+      recommendation: idx === 0 ? 'recommend_next_round' : undefined
+    }));
+  }
+
+  public async fetchCandidateSnapshot(candidateId: string): Promise<InterviewerCandidateSnapshot | null> {
+    const res = await apiClient.get<InterviewerCandidateSnapshot>(`/interviewer/candidates/${candidateId}/snapshot`);
+    if (res.success && res.data) {
+      return res.data;
+    }
+
+    // Local fallback snapshot
+    const candObj = this.getAllCandidates().find((c) => c.profile.id === candidateId) || this.getAllCandidates()[0];
+    if (!candObj) return null;
+    const cand = candObj.profile;
+
+    const apps = this.getAllApplications().filter((a) => a.candidateProfile.id === cand.id);
+    const activeApp = apps[0];
+    return {
+      candidateId: cand.id,
+      applicationId: activeApp?.id || 'app_' + cand.id,
+      hiringDriveId: activeApp?.hiringDriveId || 'drive_excelsoft_gse_2026',
+      hiringDriveTitle: activeApp?.hiringDriveTitle || 'Graduate Software Engineer Hiring Drive',
+      role: activeApp?.role || 'Graduate Software Engineer',
+      fullName: cand.fullName,
+      email: cand.email,
+      phone: cand.phone,
+      candidateType: cand.candidateType,
+      currentLocation: cand.currentLocation,
+      education: {
+        institution: cand.education.institution,
+        degree: cand.education.degree,
+        branch: cand.education.branch,
+        graduationYear: cand.education.graduationYear,
+        cgpa: cand.education.cgpa,
+        verified: cand.education.cgpa >= 7.0
+      },
+      workExperience: cand.workExperience ? cand.workExperience.map((w) => ({
+        organization: w.organization,
+        jobTitle: w.jobTitle,
+        durationMonths: w.durationMonths,
+        description: w.description,
+        relevantSkills: w.relevantSkills
+      })) : [],
+      skills: cand.skills.map((s) => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        verificationLevel: s.verificationLevel,
+        rating: s.rating || 4
+      })),
+      resumeFileName: cand.resume?.fileName || 'Resume_Verified.pdf',
+      resumeSummary: cand.resume?.parsedData?.summary || 'Demonstrated algorithmic depth and distributed systems fundamentals.',
+      assessmentScores: {
+        technicalScore: 88,
+        codingPercentile: 94,
+        problemSolvingRating: 'Proficient (Top 6%)',
+        verifiedAt: new Date().toISOString()
+      },
+      slotInfo: {
+        slotId: activeApp?.interviewSlot?.id || 'slot_01',
+        date: activeApp?.interviewSlot?.date || 'Saturday, Nov 20, 2026',
+        time: activeApp?.interviewSlot?.time || '10:00 AM - 11:00 AM IST',
+        venue: activeApp?.interviewSlot?.venueAddress || 'Excelsoft Mysuru Campus, Tech Park',
+        roomOrPanel: activeApp?.interviewSlot?.roomOrPanel || 'Panel 1 (System Architecture)',
+        attendanceVerified: Boolean(activeApp?.interviewSlot?.attendanceVerified),
+        reportingStatus: activeApp?.interviewSlot?.attendanceVerified ? 'checked_in_at_desk' : 'pending'
+      }
+    };
+  }
+
+  public async fetchSuggestedQuestions(skills: string[], role: string): Promise<any> {
+    const res = await apiClient.post<any>('/interviewer/questions/suggest', { skills, role });
+    if (res.success && res.data) {
+      return res.data;
+    }
+    return {
+      source: 'rule_based_catalog',
+      totalMatched: 4,
+      questions: [
+        {
+          id: 'q_dsa_01',
+          topic: 'Data Structures & Algorithms',
+          category: 'coding',
+          difficulty: 'intermediate',
+          question: 'How would you detect and remove a cycle in a singly linked list in O(n) time and O(1) auxiliary space?',
+          expectedKeyPoints: [
+            "Floyd's Cycle-Finding Algorithm (slow and fast pointers)",
+            'Meeting condition proof and pointer reset',
+            'Predecessor tracking'
+          ],
+          relevantSkills: ['Data Structures & Algorithms', 'Java']
+        },
+        {
+          id: 'q_java_01',
+          topic: 'JVM & Concurrency',
+          category: 'technical',
+          difficulty: 'intermediate',
+          question: 'What is the Java Memory Model? How does volatile keyword differ from synchronized in terms of atomicity and visibility?',
+          expectedKeyPoints: [
+            'Happens-before memory barrier',
+            'Volatile read/write visibility',
+            'Synchronized monitor lock'
+          ],
+          relevantSkills: ['Java']
+        }
+      ]
+    };
+  }
+
+  public async executeInterviewAction(slotId: string, action: string, notes?: string): Promise<ServiceResult<any>> {
+    const res = await apiClient.post<any>('/interviewer/execution/actions', { slotId, action, notes });
+    if (res.success) {
+      this.notify();
+      return { success: true, message: res.data?.message || 'Interview action executed successfully.', data: res.data };
+    }
+    return { success: false, message: res.error?.message || 'Failed to execute interview action.' };
+  }
+
+  public async saveScorecardDraft(evalData: any): Promise<ServiceResult<any>> {
+    const res = await apiClient.post<any>('/interviewer/evaluations/draft', evalData);
+    if (res.success) {
+      this.notify();
+      return { success: true, message: 'Draft scorecard saved.', data: res.data };
+    }
+    return { success: false, message: res.error?.message || 'Failed to save draft.' };
+  }
+
+  public async submitScorecard(evalData: any): Promise<ServiceResult<any>> {
+    const res = await apiClient.post<any>('/interviewer/evaluations/submit', evalData);
+    if (res.success) {
+      this.notify();
+      return { success: true, message: 'Evaluation successfully submitted and synchronized with HR.', data: res.data };
+    }
+    return { success: false, message: res.error?.message || 'Failed to submit evaluation.' };
+  }
+
+  public async fetchInterviewerAvailability(): Promise<InterviewerAvailability[]> {
+    const res = await apiClient.get<InterviewerAvailability[]>('/interviewer/availability');
+    if (res.success && Array.isArray(res.data)) {
+      return res.data;
+    }
+    return this.availabilities;
+  }
+
+  public async saveInterviewerAvailability(data: any): Promise<ServiceResult<any>> {
+    const res = await apiClient.post<any>('/interviewer/availability', data);
+    if (res.success) {
+      this.notify();
+      return { success: true, message: 'Availability updated successfully.', data: res.data };
+    }
+    return { success: false, message: res.error?.message || 'Failed to update availability.' };
+  }
+
+  public async declareConflict(data: any): Promise<ServiceResult<any>> {
+    const res = await apiClient.post<any>('/interviewer/conflicts', data);
+    if (res.success) {
+      this.notify();
+      return { success: true, message: 'Conflict of interest declared.', data: res.data };
+    }
+    return { success: false, message: res.error?.message || 'Failed to declare conflict.' };
+  }
+
+  public async fetchConflicts(): Promise<InterviewerConflict[]> {
+    const res = await apiClient.get<InterviewerConflict[]>('/interviewer/conflicts');
+    if (res.success && Array.isArray(res.data)) {
+      return res.data;
+    }
+    return this.conflicts;
+  }
+
+  public async reportIncident(data: any): Promise<ServiceResult<any>> {
+    const res = await apiClient.post<any>('/interviewer/incidents', data);
+    if (res.success) {
+      this.notify();
+      return { success: true, message: 'Incident reported successfully.', data: res.data };
+    }
+    return { success: false, message: res.error?.message || 'Failed to report incident.' };
+  }
+
+  public async fetchIncidents(): Promise<InterviewerIncident[]> {
+    const res = await apiClient.get<InterviewerIncident[]>('/interviewer/incidents');
+    if (res.success && Array.isArray(res.data)) {
+      return res.data;
+    }
+    return this.incidents;
   }
 }
 

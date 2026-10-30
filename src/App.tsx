@@ -22,9 +22,10 @@ import { ProfileView } from './components/profile/ProfileView';
 import { DemoScenarioSelector } from './components/common/DemoScenarioSelector';
 import { AuthFlow } from './components/auth/AuthFlow';
 import { AdminLayout } from './components/admin/AdminLayout';
+import { InterviewerLayout } from './components/interviewer/InterviewerLayout';
 
 export default function App() {
-  const [platform, setPlatform] = useState<'hr_admin' | 'candidate_mobile'>('hr_admin');
+  const [platform, setPlatform] = useState<'hr_admin' | 'candidate_mobile' | 'interviewer'>('hr_admin');
   const [profile, setProfile] = useState<CandidateProfile>(recruitmentService.getCurrentProfile());
   const [applications, setApplications] = useState<Application[]>(recruitmentService.getCandidateApplications());
   const [drives, setDrives] = useState<HiringDrive[]>(recruitmentService.getHiringDrives());
@@ -88,7 +89,22 @@ export default function App() {
 
   // HR / Company Admin Dashboard Platform
   if (platform === 'hr_admin') {
-    return <AdminLayout onSwitchToCandidateApp={() => setPlatform('candidate_mobile')} />;
+    return (
+      <AdminLayout
+        onSwitchToCandidateApp={() => setPlatform('candidate_mobile')}
+        onSwitchToInterviewer={() => setPlatform('interviewer')}
+      />
+    );
+  }
+
+  // Dedicated Interviewer Workspace
+  if (platform === 'interviewer') {
+    return (
+      <InterviewerLayout
+        onSwitchToAdmin={() => setPlatform('hr_admin')}
+        onSwitchToCandidateApp={() => setPlatform('candidate_mobile')}
+      />
+    );
   }
 
   // Candidate Mobile App Auth Screen Flow

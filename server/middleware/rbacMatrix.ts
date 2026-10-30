@@ -48,6 +48,20 @@ export type Permission =
   // Interviewer Management
   | 'interviewers:view'
   | 'interviewers:manage'
+  // Dedicated Interviewer Workspace
+  | 'interviewer:workspace:view'
+  | 'interviewer:candidates:view'
+  | 'interviewer:execution:manage'
+  | 'interviewer:evaluations:submit'
+  | 'interviewer:evaluations:view'
+  | 'interviewer:availability:manage'
+  | 'interviewer:availability:view'
+  | 'interviewer:conflicts:declare'
+  | 'interviewer:conflicts:view_own'
+  | 'interviewer:conflicts:view_all'
+  | 'interviewer:incidents:report'
+  | 'interviewer:incidents:view'
+  | 'interviewer:questions:view'
   // Audit Logs
   | 'audit:view';
 
@@ -88,6 +102,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'notes:view',
     'interviewers:view',
     'interviewers:manage',
+    'interviewer:workspace:view',
+    'interviewer:candidates:view',
+    'interviewer:execution:manage',
+    'interviewer:evaluations:submit',
+    'interviewer:evaluations:view',
+    'interviewer:availability:manage',
+    'interviewer:availability:view',
+    'interviewer:conflicts:declare',
+    'interviewer:conflicts:view_own',
+    'interviewer:conflicts:view_all',
+    'interviewer:incidents:report',
+    'interviewer:incidents:view',
+    'interviewer:questions:view',
     'audit:view'
   ],
 
@@ -120,6 +147,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'notes:view',
     'interviewers:view',
     'interviewers:manage',
+    'interviewer:workspace:view',
+    'interviewer:evaluations:view',
+    'interviewer:availability:view',
+    'interviewer:conflicts:view_all',
+    'interviewer:incidents:view',
+    'interviewer:questions:view',
     'audit:view'
   ],
 
@@ -173,9 +206,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'applications:view_all',
     'slots:view_all',
     'attendance:view_all',
-    'notes:create',
-    'notes:view',
-    'interviewers:view'
+    'interviewers:view',
+    'interviewer:workspace:view',
+    'interviewer:candidates:view',
+    'interviewer:execution:manage',
+    'interviewer:evaluations:submit',
+    'interviewer:evaluations:view',
+    'interviewer:availability:manage',
+    'interviewer:availability:view',
+    'interviewer:conflicts:declare',
+    'interviewer:conflicts:view_own',
+    'interviewer:incidents:report',
+    'interviewer:incidents:view',
+    'interviewer:questions:view'
   ],
 
   // 6. Candidate: Strictly bounded to candidate self-service actions

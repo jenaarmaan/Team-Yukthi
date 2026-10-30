@@ -337,6 +337,141 @@ export interface NotificationDocument {
   };
 }
 
+// 15. interview_evaluations: Structured scorecard and recommendations
+export interface EvaluationCriteriaScore {
+  criterionId: string;
+  name: string;
+  category: 'technical' | 'communication' | 'problem_solving' | 'coding' | 'role_specific';
+  rating: number; // 1 to 5
+  observation: string;
+  evidenceNotes?: string;
+}
+
+export type InterviewRecommendation =
+  | 'select'
+  | 'reject'
+  | 'hold'
+  | 'recommend_other_role'
+  | 'recommend_next_round';
+
+export interface InterviewEvaluationDocument {
+  id: string;
+  applicationId: string;
+  candidateId: string;
+  candidateName: string;
+  hiringDriveId: string;
+  slotId: string;
+  interviewerId: string;
+  interviewerName: string;
+  interviewerRole: string;
+  roundName: string;
+  criteriaScores: EvaluationCriteriaScore[];
+  strengths: string[];
+  areasOfImprovement: string[];
+  overallSummary: string;
+  recommendation: InterviewRecommendation;
+  recommendationReason: string;
+  status: 'draft' | 'submitted';
+  submittedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 16. interviewer_availability: Time blocks, breaks, and leave requests
+export interface InterviewerAvailabilityDocument {
+  id: string;
+  interviewerId: string;
+  date: string; // YYYY-MM-DD
+  status: 'available' | 'busy' | 'break' | 'leave' | 'emergency_unavailable';
+  startTime?: string;
+  endTime?: string;
+  note?: string;
+  leaveType?: 'sick' | 'personal' | 'emergency' | 'work_conflict';
+  approvalStatus?: 'approved' | 'pending' | 'rejected';
+  approvedByAdminId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 17. interviewer_conflicts: Confidential conflict of interest declarations
+export type ConflictCategory =
+  | 'personal_relationship'
+  | 'previous_professional'
+  | 'reporting_hierarchy'
+  | 'financial_interest'
+  | 'academic_affiliation'
+  | 'other';
+
+export interface InterviewerConflictDocument {
+  id: string;
+  interviewerId: string;
+  interviewerName: string;
+  candidateId: string;
+  candidateName: string;
+  applicationId: string;
+  slotId: string;
+  hiringDriveId: string;
+  category: ConflictCategory;
+  confidentialReason: string;
+  status: 'declared' | 'under_review' | 'reassigned' | 'rejected' | 'resolved';
+  reassignedToInterviewerId?: string;
+  reassignedToInterviewerName?: string;
+  reviewedByAdminId?: string;
+  reviewedAt?: string;
+  resolutionNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 18. interviewer_incidents: Operational and technical disruptions
+export type IncidentCategory =
+  | 'network_connectivity'
+  | 'audio_video_failure'
+  | 'candidate_unresponsive'
+  | 'venue_overlap'
+  | 'assessment_platform_error'
+  | 'identity_discrepancy'
+  | 'other';
+
+export interface InterviewerIncidentDocument {
+  id: string;
+  interviewerId: string;
+  interviewerName: string;
+  applicationId?: string;
+  candidateId?: string;
+  candidateName?: string;
+  slotId?: string;
+  hiringDriveId: string;
+  category: IncidentCategory;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  status: 'reported' | 'investigating' | 'resolved' | 'acknowledged';
+  resolutionNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 19. question_banks: Curated question repository by role, round, and topic
+export interface QuestionItem {
+  id: string;
+  topic: string;
+  category: 'technical' | 'coding' | 'problem_solving' | 'role_specific' | 'behavioral' | 'follow_up';
+  difficulty: 'entry' | 'intermediate' | 'advanced';
+  question: string;
+  expectedKeyPoints: string[];
+  codeSnippet?: string;
+  relevantSkills: string[];
+}
+
+export interface QuestionBankDocument {
+  id: string;
+  role: string;
+  interviewRound: string;
+  questions: QuestionItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const NIYOJAN_COLLECTION_NAMES = [
   'users',
   'candidate_profiles',
@@ -351,7 +486,12 @@ export const NIYOJAN_COLLECTION_NAMES = [
   'internal_hr_notes',
   'interviewer_panels',
   'slot_recovery_incidents',
-  'notifications'
+  'notifications',
+  'interview_evaluations',
+  'interviewer_availability',
+  'interviewer_conflicts',
+  'interviewer_incidents',
+  'question_banks'
 ] as const;
 
 export type NiyojanCollectionName = typeof NIYOJAN_COLLECTION_NAMES[number];
