@@ -66,6 +66,10 @@ export const startServer = async () => {
   process.on('SIGINT', () => handleShutdown('SIGINT'));
   process.on('SIGTERM', () => handleShutdown('SIGTERM'));
 
+  process.on('unhandledRejection', (reason: any) => {
+    logger.warn('Unhandled promise rejection captured (non-fatal):', reason?.message || reason);
+  });
+
   return server;
 };
 

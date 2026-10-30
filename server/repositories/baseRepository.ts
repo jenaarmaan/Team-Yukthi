@@ -1,5 +1,6 @@
 import { CollectionReference, DocumentReference, DocumentData } from 'firebase-admin/firestore';
 import { adminDb } from '../config/firebase.ts';
+import { config } from '../config/env.ts';
 import { NiyojanCollectionName } from './types.ts';
 import { logger } from '../utils/logger.ts';
 
@@ -34,14 +35,16 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
   }
 
   public async findById(id: string): Promise<T | null> {
-    try {
-      const doc = await this.collectionRef.doc(id).get();
-      if (doc.exists) {
-        return { id: doc.id, ...(doc.data() as any) } as T;
-      }
-    } catch (err: any) {
-      if (!err.message?.includes('PERMISSION_DENIED')) {
-        logger.warn(`Firestore get error on [${this.collectionName}/${id}]:`, err.message);
+    if (config.firebase.hasServiceAccount) {
+      try {
+        const doc = await this.collectionRef.doc(id).get();
+        if (doc.exists) {
+          return { id: doc.id, ...(doc.data() as any) } as T;
+        }
+      } catch (err: any) {
+        if (!err.message?.includes('PERMISSION_DENIED')) {
+          logger.warn(`Firestore get error on [${this.collectionName}/${id}]:`, err.message);
+        }
       }
     }
 
@@ -56,17 +59,19 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
   }
 
   public async findAll(limitCount = 50): Promise<T[]> {
-    try {
-      const snapshot = await this.collectionRef.limit(limitCount).get();
-      if (snapshot.docs.length > 0) {
-        return snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as any)
-        })) as T[];
-      }
-    } catch (err: any) {
-      if (!err.message?.includes('PERMISSION_DENIED')) {
-        logger.warn(`Firestore list error on [${this.collectionName}]:`, err.message);
+    if (config.firebase.hasServiceAccount) {
+      try {
+        const snapshot = await this.collectionRef.limit(limitCount).get();
+        if (snapshot.docs.length > 0) {
+          return snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...(doc.data() as any)
+          })) as T[];
+        }
+      } catch (err: any) {
+        if (!err.message?.includes('PERMISSION_DENIED')) {
+          logger.warn(`Firestore list error on [${this.collectionName}]:`, err.message);
+        }
       }
     }
 
@@ -74,17 +79,19 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
   }
 
   public async findByField(field: string, value: any, limitCount = 50): Promise<T[]> {
-    try {
-      const snapshot = await this.collectionRef.where(field, '==', value).limit(limitCount).get();
-      if (snapshot.docs.length > 0) {
-        return snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as any)
-        })) as T[];
-      }
-    } catch (err: any) {
-      if (!err.message?.includes('PERMISSION_DENIED')) {
-        logger.warn(`Firestore query error on [${this.collectionName} where ${field}==${value}]:`, err.message);
+    if (config.firebase.hasServiceAccount) {
+      try {
+        const snapshot = await this.collectionRef.where(field, '==', value).limit(limitCount).get();
+        if (snapshot.docs.length > 0) {
+          return snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...(doc.data() as any)
+          })) as T[];
+        }
+      } catch (err: any) {
+        if (!err.message?.includes('PERMISSION_DENIED')) {
+          logger.warn(`Firestore query error on [${this.collectionName} where ${field}==${value}]:`, err.message);
+        }
       }
     }
 
@@ -116,15 +123,17 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
     // Always maintain local cache
     this.inMemoryCache.set(id, { id, ...cleanData } as T);
 
-    // Persist to Cloud Firestore
-    try {
-      await this.collectionRef.doc(id).set(cleanData);
-    } catch (err: any) {
-      if (err.message?.includes('PERMISSION_DENIED')) {
-        // Expected when FIREBASE_SERVICE_ACCOUNT_KEY is awaiting console export
-        logger.debug(`Firestore [${this.collectionName}] create queued in memory cache pending elevated service account credentials.`);
-      } else {
-        logger.warn(`Firestore create error on [${this.collectionName}/${id}]:`, err.message);
+    if (config.firebase.hasServiceAccount) {
+      // Persist to Cloud Firestore
+      try {
+        await this.collectionRef.doc(id).set(cleanData);
+      } catch (err: any) {
+        if (err.message?.includes('PERMISSION_DENIED')) {
+          // Expected when FIREBASE_SERVICE_ACCOUNT_KEY is awaiting console export
+          logger.debug(`Firestore [${this.collectionName}] create queued in memory cache pending elevated service account credentials.`);
+        } else {
+          logger.warn(`Firestore create error on [${this.collectionName}/${id}]:`, err.message);
+        }
       }
     }
 
@@ -148,11 +157,13 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
     }
     this.inMemoryCache.set(id, updated as T);
 
-    try {
-      await this.collectionRef.doc(id).update(updated as any);
-    } catch (err: any) {
-      if (!err.message?.includes('PERMISSION_DENIED')) {
-        logger.warn(`Firestore update error on [${this.collectionName}/${id}]:`, err.message);
+    if (config.firebase.hasServiceAccount) {
+      try {
+        await this.collectionRef.doc(id).update(updated as any);
+      } catch (err: any) {
+        if (!err.message?.includes('PERMISSION_DENIED')) {
+          logger.warn(`Firestore update error on [${this.collectionName}/${id}]:`, err.message);
+        }
       }
     }
   }
@@ -165,11 +176,13 @@ export class BaseFirestoreRepository<T extends { id?: string; [key: string]: any
 
     this.inMemoryCache.delete(id);
 
-    try {
-      await this.collectionRef.doc(id).delete();
-    } catch (err: any) {
-      if (!err.message?.includes('PERMISSION_DENIED')) {
-        logger.warn(`Firestore delete error on [${this.collectionName}/${id}]:`, err.message);
+    if (config.firebase.hasServiceAccount) {
+      try {
+        await this.collectionRef.doc(id).delete();
+      } catch (err: any) {
+        if (!err.message?.includes('PERMISSION_DENIED')) {
+          logger.warn(`Firestore delete error on [${this.collectionName}/${id}]:`, err.message);
+        }
       }
     }
   }
