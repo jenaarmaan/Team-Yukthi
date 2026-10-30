@@ -13,6 +13,7 @@ import {
 } from '../repositories/index.ts';
 import { UserRole } from '../repositories/types.ts';
 import { logger } from '../utils/logger.ts';
+import { GeminiService } from './geminiService.ts';
 
 export interface AssistantActionLink {
   label: string;
@@ -234,6 +235,26 @@ export class AssistantService {
         answer = result.answer;
         groundedFacts.push(...result.facts);
         if (result.actions) actionLinks.push(...result.actions);
+      }
+
+      // Real-Time Gemini Enhancement: Synthesize grounded SQLite facts into natural conversational intelligence
+      if (GeminiService.isAvailable()) {
+        const history = this.getHistory(userId);
+        const contextSummary = [
+          ...groundedFacts,
+          `Deterministic Baseline Summary: ${answer}`
+        ].join('\n');
+
+        const geminiEnriched = await GeminiService.generateChatResponse({
+          role,
+          query: trimmedQuery,
+          groundedContext: contextSummary,
+          history
+        });
+
+        if (geminiEnriched && geminiEnriched.trim().length > 10) {
+          answer = geminiEnriched;
+        }
       }
     } catch (err: any) {
       logger.error('[AssistantService] Query processing error:', err);

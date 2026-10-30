@@ -242,7 +242,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
               Pioneering Autonomous Campus Recruitment
             </h2>
             <p className="text-slate-600 text-sm sm:text-base font-normal">
-              NIYOJAN was architected in collaboration with Excelsoft Technologies to resolve the chronic friction, manual rescheduling, and proxy attendance risks that plague high-volume institutional hiring drives.
+              NIYOJAN was architected to eliminate chronic friction, manual rescheduling, and proxy attendance risks that plague high-volume institutional and enterprise hiring drives.
             </p>
           </div>
 
@@ -295,13 +295,13 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
               <div className="p-8 lg:p-10 lg:col-span-7 space-y-4">
                 <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-widest">
                   <Building2 className="w-4 h-4" />
-                  <span>Enterprise Partnership</span>
+                  <span>Enterprise Infrastructure</span>
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black text-slate-950">
-                  Engineered for Excelsoft Technologies Campus Hiring
+                  Engineered for High-Volume Campus Hiring Drives
                 </h3>
                 <p className="text-slate-600 text-sm leading-relaxed font-normal">
-                  Built to service thousands of engineering candidates across VTU-affiliated campuses in Mysuru, Hyderabad, and Bengaluru. Operates with sub-millisecond local SQLite transaction isolation, preventing any remote database bottlenecks during peak check-in rushes.
+                  Built to service thousands of engineering candidates across university campuses in Mysuru, Hyderabad, and Bengaluru. Operates with sub-millisecond local SQLite transaction isolation, preventing any remote database bottlenecks during peak check-in rushes.
                 </p>
                 <div className="flex flex-wrap gap-4 pt-2">
                   <div className="flex items-center gap-2 text-xs text-slate-700 font-medium">

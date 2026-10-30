@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AssistantService } from '../services/assistantService.ts';
+import { GeminiService } from '../services/geminiService.ts';
 import { sendSuccess, sendError } from '../utils/response.ts';
 import { JwtUtil } from '../utils/jwt.ts';
 import { UserRole } from '../repositories/types.ts';
@@ -177,7 +178,11 @@ export class AssistantController {
         res,
         {
           status: 'online',
-          engine: 'NIYOJAN Context-Grounded SQLite WAL Engine + Google GenAI',
+          engine: GeminiService.isAvailable()
+            ? 'Gemini 2.5 Flash + SQLite WAL Grounding (Live)'
+            : 'NIYOJAN Context-Grounded SQLite WAL Engine',
+          geminiLive: GeminiService.isAvailable(),
+          model: 'gemini-2.5-flash',
           activeRole: user.role,
           authenticated: user.role !== 'guest',
           suggestions,

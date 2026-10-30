@@ -200,7 +200,6 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({
             </button>
           </div>
         </div>
-      </header>
 
       {/* Hero Banner of Documentation Webpage */}
       <div className="bg-white border-b border-slate-200 py-12 lg:py-16">
@@ -269,7 +268,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({
 
             <div className="space-y-6 text-slate-700 text-sm sm:text-base leading-relaxed">
               <p>
-                <strong>NIYOJAN</strong> is an autonomous campus recruitment engine engineered to eliminate the systemic inefficiencies inherent to high-volume university hiring drives. Developed in direct collaboration with <strong>Excelsoft Technologies</strong> for engineering campuses across Mysuru, Hyderabad, and Bengaluru, it addresses the three most severe structural failure points in conventional recruitment operations:
+                <strong>NIYOJAN</strong> is an autonomous campus recruitment engine engineered to eliminate the systemic inefficiencies inherent to high-volume university hiring drives. Engineered for engineering campuses across Mysuru, Hyderabad, and Bengaluru, it addresses the three most severe structural failure points in conventional recruitment operations:
               </p>
 
               {/* 3 Problems Cards */}
@@ -1254,7 +1253,7 @@ if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
                   7. Team & Open-Source Acknowledgements
                 </h2>
                 <p className="text-slate-600 text-sm mt-1">
-                  Engineered by Team Yukthi in institutional collaboration with Excelsoft Technologies.
+                  Engineered by Team Yukthi for high-volume enterprise and campus recruitment.
                 </p>
               </div>
               <button
@@ -1271,10 +1270,10 @@ if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
               <div className="p-6 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-3">
                 <div className="flex items-center gap-2 text-indigo-900 font-bold text-base">
                   <Building2 className="w-5 h-5 text-indigo-600" />
-                  <span>Institutional Collaboration: Excelsoft Technologies</span>
+                  <span>Enterprise Campus Recruitment Mission</span>
                 </div>
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                  NIYOJAN is designed and deployed in partnership with Excelsoft Technologies to modernize engineering campus recruitment across VTU-affiliated institutions in Mysuru, Hyderabad, and Bengaluru.
+                  NIYOJAN is designed and engineered to modernize university recruitment across engineering institutions in Mysuru, Hyderabad, and Bengaluru, eliminating manual coordination overhead and guaranteeing zero slot wastage.
                 </p>
               </div>
 

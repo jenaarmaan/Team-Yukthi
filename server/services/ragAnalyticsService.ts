@@ -10,6 +10,7 @@ import {
   absenceRecordsRepository
 } from '../repositories/index.ts';
 import { logger } from '../utils/logger.ts';
+import { GeminiService } from './geminiService.ts';
 
 export interface RagDocumentChunk {
   id: string;
@@ -269,12 +270,28 @@ export class RagAnalyticsService {
     };
 
     // Generate grounded response and insights
-    const { answer, insights, recommendations } = this.generateGroundedResponse(
+    let { answer, insights, recommendations } = this.generateGroundedResponse(
       query,
       intent,
       relevantChunks,
       metrics
     );
+
+    // Real-Time Gemini RAG Synthesis: Generate deep contextual synthesis from retrieved chunks
+    if (GeminiService.isAvailable()) {
+      const geminiResult = await GeminiService.generateRagAnalytics({
+        query,
+        metrics,
+        retrievedChunks: relevantChunks,
+        actorRole
+      });
+
+      if (geminiResult) {
+        if (geminiResult.answer) answer = geminiResult.answer;
+        if (geminiResult.insights && geminiResult.insights.length > 0) insights = geminiResult.insights;
+        if (geminiResult.recommendations && geminiResult.recommendations.length > 0) recommendations = geminiResult.recommendations;
+      }
+    }
 
     const sources = relevantChunks.map((c) => ({
       title: c.title,

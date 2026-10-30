@@ -256,7 +256,7 @@ export class InterviewerWorkspaceController {
   public static async suggestQuestions(req: Request, res: Response): Promise<void> {
     const { skills = [], role = 'Software Engineer', interviewRound = 'Technical Round 1' } = req.body;
 
-    const result = QuestionSuggestionService.suggestQuestions({
+    const result = await QuestionSuggestionService.suggestQuestions({
       skills,
       role,
       interviewRound

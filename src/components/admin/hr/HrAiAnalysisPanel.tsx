@@ -98,10 +98,10 @@ export const HrAiAnalysisPanel: React.FC<HrAiAnalysisPanelProps> = ({
             <h3 className="text-xs font-black text-slate-900 tracking-tight flex items-center gap-1.5">
               <span>AI Recruitment Analysis</span>
               <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-100 text-indigo-700">
-                LIVE
+                GEMINI 2.5 LIVE
               </span>
             </h3>
-            <p className="text-[10px] text-slate-500">Autonomous insights & observations</p>
+            <p className="text-[10px] text-slate-500">Autonomous RAG insights & observations</p>
           </div>
         </div>
 

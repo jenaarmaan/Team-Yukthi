@@ -1,5 +1,6 @@
 import { QuestionItem } from '../repositories/types.ts';
 import { logger } from '../utils/logger.ts';
+import { GeminiService } from './geminiService.ts';
 
 // Curated Enterprise Question Bank for Excelsoft Technologies Recruitment
 const QUESTION_CATALOG: QuestionItem[] = [
@@ -160,22 +161,47 @@ const QUESTION_CATALOG: QuestionItem[] = [
 export class QuestionSuggestionService {
   /**
    * Suggests questions tailored to candidate skills, role, and round.
+   * If Gemini API is available, generates tailored dynamic assessment questions.
+   * Otherwise falls back to the curated rule-based catalog.
    */
-  public static suggestQuestions(params: {
+  public static async suggestQuestions(params: {
     skills: string[];
     role: string;
     interviewRound?: string;
     targetCount?: number;
-  }): {
+  }): Promise<{
     source: 'rule_based_catalog' | 'gemini_generative_ai';
     totalMatched: number;
     questions: QuestionItem[];
-  } {
-    const { skills, role, targetCount = 6 } = params;
+  }> {
+    const { skills, role, interviewRound = 'Technical Round 1', targetCount = 6 } = params;
+
+    // Real-Time Gemini AI Generation
+    if (GeminiService.isAvailable()) {
+      try {
+        const geminiQuestions = await GeminiService.generateQuestionSuggestions({
+          skills,
+          role,
+          interviewRound,
+          targetCount
+        });
+
+        if (geminiQuestions && geminiQuestions.length > 0) {
+          return {
+            source: 'gemini_generative_ai',
+            totalMatched: geminiQuestions.length,
+            questions: geminiQuestions
+          };
+        }
+      } catch (err: any) {
+        logger.warn(`[QuestionSuggestionService] Gemini generation fallback to catalog: ${err.message}`);
+      }
+    }
+
     const lowerSkills = skills.map((s) => s.toLowerCase());
     const lowerRole = role.toLowerCase();
 
-    // 1. Score each catalog question based on skill and role relevance
+    // Catalog Scoring Fallback
     const scored = QUESTION_CATALOG.map((item) => {
       let score = 0;
       for (const skill of item.relevantSkills) {

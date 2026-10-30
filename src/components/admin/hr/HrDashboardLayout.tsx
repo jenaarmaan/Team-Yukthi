@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GlobalNavbar } from '../../common/GlobalNavbar';
 import { HrOverviewView } from './HrOverviewView';
 import { HrAnalyticsView } from './HrAnalyticsView';
 import { HrDrivesView } from './HrDrivesView';
@@ -70,98 +71,26 @@ export const HrDashboardLayout: React.FC<HrDashboardLayoutProps> = ({
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900 selection:bg-indigo-600 selection:text-white">
       
-      {/* 1. TOP HEADER */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-2xs px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
-        
-        {/* Left: Mobile Toggle & Branding */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex items-center justify-center font-black text-base shadow-xs">
-              N
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-base tracking-tight text-slate-900">NIYOJAN</span>
-                <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                  HR Admin Dashboard
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 hidden sm:block">Excelsoft Technologies Recruitment Management</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: View Switchers, AI Panel Toggle & Profile */}
-        <div className="flex items-center gap-2.5">
-          {/* AI Analysis Panel Toggle */}
-          <button
-            onClick={() => setAiPanelOpen(!aiPanelOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs ${
-              aiPanelOpen
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-            title="Toggle Right-Side AI Recruitment Analysis Panel"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="hidden sm:inline">AI Analysis</span>
-          </button>
-
-          {/* Switch to Candidate App */}
-          {onSwitchToCandidateApp && (
-            <button
-              onClick={onSwitchToCandidateApp}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-slate-500" />
-              <span>Candidate App</span>
-            </button>
-          )}
-
-          {/* Return to Public Home */}
-          {onSwitchToHome && (
-            <button
-              onClick={onSwitchToHome}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors"
-              title="Return to Public Homepage"
-            >
-              <Home className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Public Home</span>
-            </button>
-          )}
-
-          {/* Profile & Security */}
-          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 transition-colors"
-              title="Reset / Change Password"
-            >
-              <KeyRound className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-
-            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
-              {currentAdmin.avatarInitials}
-            </div>
-          </div>
-        </div>
-
-      </header>
+      {/* 1. UNIVERSAL GLOBAL NAVIGATION BAR */}
+      <GlobalNavbar
+        currentPlatform="hr_admin"
+        mobileMenuOpen={mobileMenuOpen}
+        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        onNavigateHome={onSwitchToHome || (() => {})}
+        onNavigateAbout={() => {
+          if (onSwitchToHome) onSwitchToHome();
+        }}
+        onNavigateDocs={() => {
+          if (onSwitchToHome) onSwitchToHome();
+        }}
+        onOpenAuth={() => {}}
+        onLogout={onLogout || handleLogout}
+        onSelectWorkspace={(ws) => {
+          if (ws === 'candidate' && onSwitchToCandidateApp) onSwitchToCandidateApp();
+          else if (ws === 'interviewer' && onSwitchToInterviewer) onSwitchToInterviewer();
+          else if (onOpenRoleSwitcher) onOpenRoleSwitcher();
+        }}
+      />
 
       {/* 2. MAIN BODY: FIXED LEFT SIDEBAR + CONTENT AREA + RIGHT-SIDE AI PANEL */}
       <div className="flex-1 flex w-full relative overflow-hidden">
@@ -175,7 +104,7 @@ export const HrDashboardLayout: React.FC<HrDashboardLayoutProps> = ({
         {/* 4. Dashboard (at the bottom of the sidebar)                               */}
         {/* ========================================================================= */}
         <aside
-          className={`fixed lg:sticky top-16 z-30 w-60 h-[calc(100vh-4rem)] bg-white border-r border-slate-200 p-4 flex flex-col justify-between overflow-y-auto transition-transform shrink-0 ${
+          className={`fixed lg:sticky top-20 z-30 w-60 h-[calc(100vh-5rem)] bg-white border-r border-slate-200 p-4 flex flex-col justify-between overflow-y-auto transition-transform shrink-0 ${
             mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
           }`}
         >

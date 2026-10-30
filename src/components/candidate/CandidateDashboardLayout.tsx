@@ -135,134 +135,26 @@ export const CandidateDashboardLayout: React.FC<CandidateDashboardLayoutProps> =
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900 selection:bg-indigo-600 selection:text-white">
       
-      {/* 1. TOP HEADER */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-2xs px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
-        
-        {/* Left: Mobile Toggle & Branding */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex items-center justify-center font-black text-base shadow-xs">
-              N
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-base tracking-tight text-slate-900">NIYOJAN</span>
-                <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                  Candidate Portal
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 hidden sm:block">
-                Excelsoft Technologies Campus Recruitment
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Quick Action Controls, View Switchers, Profile & Security */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          
-          {/* Notifications Quick Bell */}
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`relative p-2 rounded-xl border transition-colors shadow-2xs ${
-              activeTab === 'notifications'
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-            title="View Real-Time Notifications"
-          >
-            <Bell className="w-4 h-4" />
-            {unreadNotificationCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs animate-pulse">
-                {unreadNotificationCount}
-              </span>
-            )}
-          </button>
-
-          {/* Persona / QA Scenario Switcher */}
-          <button
-            onClick={() => setShowScenarioSwitcher(true)}
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors"
-            title="Switch Candidate Persona or Test Scenarios"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Test Personas</span>
-          </button>
-
-          {/* Switch to HR Admin */}
-          {onSwitchToAdmin && (
-            <button
-              onClick={onSwitchToAdmin}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors"
-              title="Switch to HR Admin Dashboard"
-            >
-              <Users className="w-3.5 h-3.5 text-indigo-600" />
-              <span>HR Admin</span>
-            </button>
-          )}
-
-          {/* Switch to Interviewer Workspace */}
-          {onSwitchToInterviewer && (
-            <button
-              onClick={onSwitchToInterviewer}
-              className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors"
-              title="Switch to Interviewer Workspace"
-            >
-              <Shield className="w-3.5 h-3.5 text-violet-600" />
-              <span>Interviewer</span>
-            </button>
-          )}
-
-          {/* Public Home */}
-          {onSwitchToHome && (
-            <button
-              onClick={onSwitchToHome}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors"
-              title="Return to Public Homepage"
-            >
-              <Home className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Home</span>
-            </button>
-          )}
-
-          {/* Profile & Security Section */}
-          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 transition-colors"
-              title="Reset / Change Password"
-            >
-              <KeyRound className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => setActiveTab('profile')}
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-white font-bold text-xs flex items-center justify-center hover:opacity-90 shadow-2xs transition-all"
-              title={`Logged in as ${profile.fullName} (${profile.email})`}
-            >
-              {candidateInitials}
-            </button>
-          </div>
-
-        </div>
-
-      </header>
+      {/* 1. UNIVERSAL GLOBAL NAVIGATION BAR */}
+      <GlobalNavbar
+        currentPlatform="candidate_mobile"
+        mobileMenuOpen={mobileMenuOpen}
+        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        onNavigateHome={onSwitchToHome || (() => {})}
+        onNavigateAbout={() => {
+          if (onSwitchToHome) onSwitchToHome();
+        }}
+        onNavigateDocs={() => {
+          if (onSwitchToHome) onSwitchToHome();
+        }}
+        onOpenAuth={() => {}}
+        onOpenProfileTab={() => setActiveTab('profile')}
+        onLogout={onLogout || handleLogout}
+        onSelectWorkspace={(ws) => {
+          if (ws === 'hr_admin' && onSwitchToAdmin) onSwitchToAdmin();
+          if (ws === 'interviewer' && onSwitchToInterviewer) onSwitchToInterviewer();
+        }}
+      />
 
       {/* 2. MAIN BODY: FIXED LEFT SIDEBAR + CONTENT AREA */}
       <div className="flex-1 flex w-full relative overflow-hidden">
@@ -278,7 +170,7 @@ export const CandidateDashboardLayout: React.FC<CandidateDashboardLayoutProps> =
         {/* 6. Dashboard (fixed at the bottom)                                        */}
         {/* ========================================================================= */}
         <aside
-          className={`fixed lg:sticky top-16 z-30 w-64 h-[calc(100vh-4rem)] bg-white border-r border-slate-200 p-4 flex flex-col justify-between overflow-y-auto transition-transform shrink-0 ${
+          className={`fixed lg:sticky top-20 z-30 w-64 h-[calc(100vh-5rem)] bg-white border-r border-slate-200 p-4 flex flex-col justify-between overflow-y-auto transition-transform shrink-0 ${
             mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
           }`}
         >

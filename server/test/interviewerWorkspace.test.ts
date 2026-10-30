@@ -40,14 +40,14 @@ describe('NIYOJAN Dedicated Interviewer Workspace Integration Tests', () => {
   });
 
   describe('2. Suggested Questions Engine', () => {
-    it('should suggest relevant questions matching candidate skills and role', () => {
-      const result = QuestionSuggestionService.suggestQuestions({
+    it('should suggest relevant questions matching candidate skills and role', async () => {
+      const result = await QuestionSuggestionService.suggestQuestions({
         skills: ['Java', 'Data Structures & Algorithms', 'System Design'],
         role: 'Graduate Software Engineer',
         interviewRound: 'Technical Round 1'
       });
 
-      expect(result.source).toBe('rule_based_catalog');
+      expect(['rule_based_catalog', 'gemini_generative_ai']).toContain(result.source);
       expect(result.questions.length).toBeGreaterThan(0);
       const hasDsaOrJava = result.questions.some(
         (q) => q.relevantSkills.includes('Java') || q.relevantSkills.includes('Data Structures & Algorithms')

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GlobalNavbar } from '../common/GlobalNavbar';
 import {
   clientAuthService,
   CandidateRegistrationInput,
@@ -274,30 +275,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-600 selection:text-white">
-      {/* Top Bar with Brand & Back Button */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-slate-900 bg-slate-950/80 backdrop-blur-md">
-        <button
-          onClick={onBackToHome}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-        >
-          <Home className="w-4 h-4 text-indigo-400" />
-          <span>Back to Public Homepage</span>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-xs">
-            NY
-          </div>
-          <span className="font-black text-sm tracking-tight text-white">NIYOJAN</span>
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-700/40">
-            SECURITY GATEWAY
-          </span>
-        </div>
-
-        <div className="text-xs text-slate-500 font-mono hidden sm:block">
-          Embedded SQLite WAL • 0ms Latency
-        </div>
-      </header>
+      {/* Universal Global Navigation Bar */}
+      <GlobalNavbar
+        currentPlatform="login"
+        onNavigateHome={onBackToHome}
+        onNavigateAbout={() => {
+          onBackToHome();
+          setTimeout(() => {
+            document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }}
+        onNavigateDocs={() => {
+          onBackToHome();
+        }}
+        onOpenAuth={() => setView('login')}
+      />
 
       {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
@@ -965,7 +957,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
       {/* Footer */}
       <footer className="px-6 py-4 border-t border-slate-900 text-center text-xs text-slate-500">
-        © 2026 NIYOJAN Recruitment Engine &bull; Excelsoft Technologies &bull; Pure Scrypt Cryptographic Security
+        © 2026 NIYOJAN Recruitment Engine &bull; Enterprise Campus Hiring &bull; Pure Scrypt Cryptographic Security
       </footer>
     </div>
   );

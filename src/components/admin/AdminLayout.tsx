@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GlobalNavbar } from '../common/GlobalNavbar';
 import { recruitmentService } from '../../services/storageService';
 import { clientAuthService } from '../../services/firebaseAuth';
 import { AdminRole, AdminUser } from '../../types/recruitment';
@@ -139,7 +140,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       case 'interview_coordinator':
         return { title: 'NIYOJAN Interview Coordinator', badge: 'COORDINATOR', sub: 'Venue Operations, Live Attendance & Standby Triage' };
       default:
-        return { title: 'NIYOJAN Workspace', badge: currentRole.toUpperCase(), sub: 'Excelsoft Technologies Recruitment Management' };
+        return { title: 'NIYOJAN Workspace', badge: currentRole.toUpperCase(), sub: 'Autonomous Recruitment Management' };
     }
   };
 
@@ -188,120 +189,32 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900 selection:bg-indigo-500 selection:text-white">
-      {/* 1. TOP HEADER (ENTERPRISE CONTRACT: BRANDING - GLOBAL SWITCHER - ROLE - PROFILE) */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-2xs px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
-        {/* Left: Mobile menu button + Brand wordmark */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex items-center justify-center font-black text-base shadow-xs">
-              N
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-base tracking-tight text-slate-900">{roleMeta.title}</span>
-                <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                  {roleMeta.badge}
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 hidden sm:block">{roleMeta.sub}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Center/Right: App Switcher & Role Selector */}
-        <div className="flex items-center gap-2.5">
-          {/* Public Home Portal Switcher */}
-          {onSwitchToHome && (
-            <button
-              onClick={onSwitchToHome}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors"
-              title="Return to Public Homepage"
-            >
-              <Home className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Public Home</span>
-            </button>
-          )}
-
-          {/* Dedicated Interviewer Workspace Switcher */}
-          {onSwitchToInterviewer && (
-            <button
-              onClick={onSwitchToInterviewer}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs shadow-2xs transition-colors"
-              title="Open Dedicated Interviewer Workspace"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span className="hidden sm:inline">Interviewer Workspace</span>
-            </button>
-          )}
-
-          {/* Global View Switcher: Back to Candidate Mobile App */}
-          <button
-            onClick={onSwitchToCandidateApp}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs active:scale-95 transition-all"
-            title="Open Candidate-Facing Mobile Experience"
-          >
-            <Smartphone className="w-3.5 h-3.5 text-indigo-300" />
-            <span className="hidden md:inline">Candidate Mobile View</span>
-            <span className="md:hidden">Candidate App</span>
-          </button>
-
-          {/* Role-Based Access Dropdown */}
-          <div className="relative hidden md:block">
-            <select
-              value={currentRole}
-              onChange={(e) => handleRoleChange(e.target.value as AdminRole)}
-              className="pl-2.5 pr-8 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 focus:outline-none appearance-none cursor-pointer"
-            >
-              <option value="super_admin">Role: Super Admin</option>
-              <option value="hr_admin">Role: HR Admin</option>
-              <option value="recruitment_manager">Role: Recruitment Manager</option>
-              <option value="interview_coordinator">Role: Interview Coordinator</option>
-              <option value="interviewer">Role: Interviewer</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
-          </div>
-
-          {/* Profile Pill & Security Actions */}
-          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 transition-colors"
-              title="Reset / Change Password"
-            >
-              <KeyRound className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors"
-              title="Sign Out of Dashboard"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-
-            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
-              {currentAdmin.avatarInitials}
-            </div>
-            <div className="hidden xl:block text-left">
-              <div className="text-xs font-bold text-slate-900 leading-none">{currentAdmin.name}</div>
-              <div className="text-[10px] text-slate-400 mt-0.5">{currentAdmin.department}</div>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* 1. UNIVERSAL GLOBAL NAVIGATION BAR */}
+      <GlobalNavbar
+        currentPlatform="hr_admin"
+        mobileMenuOpen={mobileMenuOpen}
+        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        onNavigateHome={onSwitchToHome || (() => {})}
+        onNavigateAbout={() => {
+          if (onSwitchToHome) onSwitchToHome();
+        }}
+        onNavigateDocs={() => {
+          if (onSwitchToHome) onSwitchToHome();
+        }}
+        onOpenAuth={() => {}}
+        onLogout={onLogout || handleLogout}
+        onSelectWorkspace={(ws) => {
+          if (ws === 'candidate' && onSwitchToCandidateApp) onSwitchToCandidateApp();
+          else if (ws === 'interviewer' && onSwitchToInterviewer) onSwitchToInterviewer();
+          else handleRoleChange(ws as AdminRole);
+        }}
+      />
 
       {/* 2. BODY SPLIT: SIDEBAR NAVIGATION + MAIN CONTENT */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         {/* Left Sidebar (Desktop 260px) */}
         <aside
-          className={`fixed lg:sticky top-16 z-30 w-64 h-[calc(100vh-4rem)] bg-white border-r border-slate-200 p-4 flex flex-col justify-between overflow-y-auto transition-transform ${
+          className={`fixed lg:sticky top-20 z-30 w-64 h-[calc(100vh-5rem)] bg-white border-r border-slate-200 p-4 flex flex-col justify-between overflow-y-auto transition-transform ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
         >

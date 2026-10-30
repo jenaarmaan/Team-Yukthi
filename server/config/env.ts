@@ -11,6 +11,7 @@ export interface ServerConfig {
   apiVersion: string;
   isProduction: boolean;
   databasePath: string;
+  geminiApiKey: string;
 }
 
 const parsePort = (val?: string): number => {
@@ -27,7 +28,8 @@ export const config: ServerConfig = {
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   apiVersion: 'v1',
   isProduction: process.env.NODE_ENV === 'production',
-  databasePath: process.env.DATABASE_PATH || path.resolve(process.cwd(), 'data', 'niyojan.db')
+  databasePath: process.env.DATABASE_PATH || path.resolve(process.cwd(), 'data', 'niyojan.db'),
+  geminiApiKey: process.env.GEMINI_API_KEY || ''
 };
 
 export const validateEnv = (): void => {

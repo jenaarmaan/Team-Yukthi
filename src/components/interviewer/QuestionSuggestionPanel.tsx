@@ -38,6 +38,7 @@ export const QuestionSuggestionPanel: React.FC<QuestionSuggestionPanelProps> = (
   const [showAddCustom, setShowAddCustom] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState<'rule_based_catalog' | 'gemini_generative_ai'>('rule_based_catalog');
 
   useEffect(() => {
     setLoading(true);
@@ -46,6 +47,7 @@ export const QuestionSuggestionPanel: React.FC<QuestionSuggestionPanelProps> = (
       .then((res) => {
         if (res && res.questions) {
           setQuestions(res.questions);
+          if (res.source) setSource(res.source);
         }
       })
       .finally(() => setLoading(false));
@@ -104,8 +106,12 @@ export const QuestionSuggestionPanel: React.FC<QuestionSuggestionPanelProps> = (
               <Sparkles className="w-4 h-4 text-indigo-600" />
               <span>Suggested Interview Questions</span>
             </h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
-              Advisory Assistant
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
+              source === 'gemini_generative_ai'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+            }`}>
+              {source === 'gemini_generative_ai' ? 'Gemini 2.5 Live AI' : 'Catalog Advisory'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">

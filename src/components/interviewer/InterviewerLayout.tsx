@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GlobalNavbar } from '../common/GlobalNavbar';
 import { recruitmentService } from '../../services/storageService';
 import { clientAuthService } from '../../services/firebaseAuth';
 import {
@@ -132,88 +133,26 @@ export const InterviewerLayout: React.FC<InterviewerLayoutProps> = ({
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-2xs px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
-        {/* Left: Brand Wordmark */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-700 via-indigo-600 to-indigo-500 text-white flex items-center justify-center font-black text-sm shadow-xs tracking-wider">
-              NY
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-slate-900 tracking-tight text-sm">NIYOJAN</span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  INTERVIEWER
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium hidden sm:block">
-                Dedicated Panel Workspace &bull; Excelsoft Technologies
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Platform Switcher & Interviewer Pill */}
-        <div className="flex items-center gap-3">
-          {/* Public Home Portal */}
-          {onSwitchToHome && (
-            <button
-              onClick={onSwitchToHome}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
-              title="Return to Public Homepage"
-            >
-              <Home className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Public Home</span>
-            </button>
-          )}
-
-          {/* Switch to HR Admin */}
-          <button
-            onClick={onSwitchToAdmin}
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
-          >
-            <Building2 className="w-3.5 h-3.5 text-slate-500" />
-            <span>HR Command Center</span>
-          </button>
-
-          {/* Switch to Candidate Mobile */}
-          <button
-            onClick={onSwitchToCandidateApp}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
-          >
-            <Smartphone className="w-3.5 h-3.5 text-slate-500" />
-            <span>Candidate App</span>
-          </button>
-
-          {/* Sign Out */}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50/50 hover:bg-rose-100/60 text-xs font-semibold text-rose-600 transition-colors"
-            title="Sign Out of Interviewer Workspace"
-          >
-            <LogOut className="w-3.5 h-3.5 text-rose-600" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </button>
-
-          {/* Panelist Profile Pill */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
-              {interviewer.name.split(' ').map((n) => n[0]).join('').substring(0, 2)}
-            </div>
-            <div className="text-left hidden lg:block">
-              <span className="text-xs font-bold text-slate-900 block leading-tight">{interviewer.name}</span>
-              <span className="text-[10px] text-slate-500 block leading-tight font-mono">{interviewer.assignedPanel}</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* 1. UNIVERSAL GLOBAL NAVIGATION BAR */}
+      <GlobalNavbar
+        currentPlatform="interviewer"
+        mobileMenuOpen={mobileMenuOpen}
+        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        onNavigateHome={onSwitchToHome || (() => {})}
+        onNavigateAbout={() => {
+          if (onSwitchToHome) onSwitchToHome();
+        }}
+        onNavigateDocs={() => {
+          if (onSwitchToHome) onSwitchToHome();
+        }}
+        onOpenAuth={() => {}}
+        onOpenProfileTab={() => setActiveTab('profile')}
+        onLogout={onLogout || handleLogout}
+        onSelectWorkspace={(ws) => {
+          if (ws === 'candidate' && onSwitchToCandidateApp) onSwitchToCandidateApp();
+          else if (ws !== 'interviewer' && onSwitchToAdmin) onSwitchToAdmin();
+        }}
+      />
 
       {/* Main App Container */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto p-4 lg:p-6 gap-6">

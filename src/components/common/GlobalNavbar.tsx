@@ -238,19 +238,19 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
           </div>
 
           {/* ========================================================================= */}
-          {/* 2. MIDDLE OF THE PAGE: NIYOJAN - Intelligent Hiring. Seamless Opportunities */}
+          {/* 2. MIDDLE OF THE PAGE: NIYOJAN- Intelligent Hiring. Seamless Opportunities */}
           {/* Requirements: Centered in the middle of the navbar / page                  */}
           {/* ========================================================================= */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center text-center pointer-events-auto px-2 max-w-[55%] sm:max-w-none">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center text-center pointer-events-auto px-2">
             <button
               onClick={onNavigateHome}
-              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group text-left sm:text-center focus:outline-hidden"
+              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group text-center focus:outline-hidden"
+              title="NIYOJAN- Intelligent Hiring. Seamless Opportunities."
             >
-              <span className="font-black text-base sm:text-lg lg:text-xl tracking-tight bg-gradient-to-r from-indigo-950 via-indigo-700 to-violet-800 bg-clip-text text-transparent group-hover:opacity-90 transition-opacity">
-                NIYOJAN
+              <span className="font-black text-base sm:text-lg lg:text-xl tracking-tight text-slate-950 group-hover:text-indigo-600 transition-colors">
+                NIYOJAN-
               </span>
-              <span className="text-slate-400 font-bold text-sm sm:text-base">-</span>
-              <span className="text-[11px] sm:text-xs md:text-sm text-slate-600 font-semibold tracking-normal truncate">
+              <span className="text-xs sm:text-sm lg:text-base text-slate-600 font-semibold tracking-normal whitespace-nowrap hidden sm:inline">
                 Intelligent Hiring. Seamless Opportunities.
               </span>
             </button>
@@ -259,12 +259,12 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
           {/* ========================================================================= */}
           {/* 3. RIGHT SIDE: About & Documentation pushed right, next to Login/Profile   */}
           {/* ========================================================================= */}
-          <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex items-center gap-2 sm:gap-4 ml-auto">
             
             {/* About Navigation Button */}
             <button
               onClick={onNavigateAbout}
-              className="text-xs font-semibold text-slate-600 hover:text-indigo-600 py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+              className="text-xs sm:text-sm font-semibold text-slate-600 hover:text-indigo-600 py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
             >
               About
             </button>
@@ -272,9 +272,9 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             {/* Documentation Navigation Button */}
             <button
               onClick={onNavigateDocs}
-              className="text-xs font-semibold text-slate-600 hover:text-indigo-600 py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="text-xs sm:text-sm font-semibold text-slate-600 hover:text-indigo-600 py-1.5 px-2.5 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+              <BookOpen className="w-4 h-4 text-indigo-600" />
               <span>Documentation</span>
             </button>
 

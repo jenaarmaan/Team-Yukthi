@@ -212,8 +212,8 @@ export const AssistantWindow: React.FC<AssistantWindowProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-indigo-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              <span>Online • Context-Grounded</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Online • Gemini 2.5 Flash + SQLite Grounded</span>
             </div>
           </div>
         </div>
