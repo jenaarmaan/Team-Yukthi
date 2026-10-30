@@ -15,6 +15,7 @@ import { interviewerRoutes } from './interviewerRoutes.ts';
 import { interviewerWorkspaceRoutes } from './interviewerWorkspaceRoutes.ts';
 import { notificationRoutes } from './notificationRoutes.ts';
 import { analyticsRoutes } from './analyticsRoutes.ts';
+import { assistantRoutes } from './assistantRoutes.ts';
 
 const router = Router();
 
@@ -41,7 +42,8 @@ router.get('/', (req, res) => {
       interviewers: '/api/v1/interviewers',
       notifications: '/api/v1/notifications',
       admin: '/api/v1/admin',
-      analytics: '/api/v1/analytics'
+      analytics: '/api/v1/analytics',
+      assistant: '/api/v1/assistant'
     },
     status: 'operational',
     timestamp: new Date().toISOString()
@@ -65,6 +67,7 @@ router.use('/interviewers', interviewerRoutes);
 router.use('/interviewer', interviewerWorkspaceRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/assistant', assistantRoutes);
 
 export const apiRouter = router;
 
