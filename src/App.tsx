@@ -10,13 +10,14 @@ import { CandidateDashboardLayout, CandidateSidebarTab } from './components/cand
 import { AdminLayout } from './components/admin/AdminLayout';
 import { InterviewerLayout } from './components/interviewer/InterviewerLayout';
 import { PublicHomePage, PublicWorkspaceTarget } from './components/public/PublicHomePage';
+import { DocumentationPage } from './components/docs/DocumentationPage';
 import { AuthPage } from './components/auth/AuthPage';
 import { clientAuthService } from './services/firebaseAuth';
 import { AssistantWidget } from './components/assistant/AssistantWidget';
 import { AssistantRole } from './components/assistant/types';
 
 export default function App() {
-  const [platform, setPlatform] = useState<'home' | 'login' | 'hr_admin' | 'candidate_mobile' | 'interviewer'>('home');
+  const [platform, setPlatform] = useState<'home' | 'docs' | 'login' | 'hr_admin' | 'candidate_mobile' | 'interviewer'>('home');
   const [profile, setProfile] = useState<CandidateProfile>(recruitmentService.getCurrentProfile());
   const [applications, setApplications] = useState<Application[]>(recruitmentService.getCandidateApplications());
   const [drives, setDrives] = useState<HiringDrive[]>(recruitmentService.getHiringDrives());
@@ -41,7 +42,7 @@ export default function App() {
 
   // Determine current active role for the persistent AI Assistant
   const getAssistantRole = (): AssistantRole => {
-    if (platform === 'home' || platform === 'login') {
+    if (platform === 'home' || platform === 'docs' || platform === 'login') {
       const user = clientAuthService.getCurrentUser();
       return (user?.role as AssistantRole) || 'guest';
     }
@@ -106,10 +107,7 @@ export default function App() {
     } else if (action === 'open_auth') {
       setPlatform('login');
     } else if (action === 'open_docs') {
-      setPlatform('home');
-      setTimeout(() => {
-        document.getElementById('docs')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      setPlatform('docs');
     }
   };
 
@@ -133,6 +131,30 @@ export default function App() {
           }}
           onOpenAuth={() => {
             setPlatform('login');
+          }}
+          onOpenDocs={() => {
+            setPlatform('docs');
+          }}
+        />
+      );
+    }
+
+    // 2. Dedicated Documentation Webpage (7 Sequential Down-to-Down Modules with Button Redirects)
+    if (platform === 'docs') {
+      return (
+        <DocumentationPage
+          onBackToHome={() => setPlatform('home')}
+          onOpenAuth={() => setPlatform('login')}
+          onSelectWorkspace={(workspace: PublicWorkspaceTarget) => {
+            if (workspace === 'candidate') {
+              setPlatform('candidate_mobile');
+            } else if (workspace === 'interviewer') {
+              recruitmentService.switchAdminRole('interviewer');
+              setPlatform('interviewer');
+            } else {
+              recruitmentService.switchAdminRole(workspace);
+              setPlatform('hr_admin');
+            }
           }}
         />
       );

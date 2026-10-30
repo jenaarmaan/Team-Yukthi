@@ -371,3 +371,4 @@ export const LocationTrackingView: React.FC = () => {
     </div>
   );
 };
+

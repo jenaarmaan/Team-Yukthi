@@ -7,6 +7,7 @@ import {
 } from '../../types/recruitment';
 import { recruitmentService } from '../../services/storageService';
 import { clientAuthService } from '../../services/firebaseAuth';
+import { GlobalNavbar } from '../common/GlobalNavbar';
 
 // Step Views
 import { CandidateOverviewView } from './CandidateOverviewView';

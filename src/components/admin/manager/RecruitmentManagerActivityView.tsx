@@ -210,3 +210,4 @@ export const RecruitmentManagerActivityView: React.FC = () => {
     </div>
   );
 };
+

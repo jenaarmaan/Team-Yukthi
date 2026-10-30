@@ -179,3 +179,4 @@ export const CandidateNotificationsView: React.FC<CandidateNotificationsViewProp
     </div>
   );
 };
+

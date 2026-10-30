@@ -784,3 +784,4 @@ export const CandidateArenaView: React.FC = () => {
     </div>
   );
 };
+

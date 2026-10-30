@@ -440,3 +440,4 @@ export const CandidateIntelligenceView: React.FC = () => {
     </div>
   );
 };
+

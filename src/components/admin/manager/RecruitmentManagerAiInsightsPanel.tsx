@@ -268,3 +268,4 @@ export const RecruitmentManagerAiInsightsPanel: React.FC<RecruitmentManagerAiIns
     </aside>
   );
 };
+

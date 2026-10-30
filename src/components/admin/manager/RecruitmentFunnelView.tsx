@@ -397,3 +397,4 @@ export const RecruitmentFunnelView: React.FC = () => {
     </div>
   );
 };
+

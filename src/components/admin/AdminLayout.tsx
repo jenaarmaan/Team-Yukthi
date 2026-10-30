@@ -18,6 +18,7 @@ import { AdminQATestRunner } from './AdminQATestRunner';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { HrDashboardLayout } from './hr/HrDashboardLayout';
 import { RecruitmentManagerDashboardLayout } from './manager/RecruitmentManagerDashboardLayout';
+import { CoordinatorDashboardLayout } from './coordinator/CoordinatorDashboardLayout';
 import {
   LayoutDashboard,
   Building2,
@@ -161,6 +162,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   if (currentRole === 'recruitment_manager') {
     return (
       <RecruitmentManagerDashboardLayout
+        onSwitchToCandidateApp={onSwitchToCandidateApp}
+        onSwitchToInterviewer={onSwitchToInterviewer}
+        onSwitchToHrAdmin={() => handleRoleChange('hr_admin')}
+        onSwitchToHome={onSwitchToHome}
+        onLogout={onLogout}
+        onOpenRoleSwitcher={() => handleRoleChange('super_admin')}
+      />
+    );
+  }
+
+  // Dedicated Interview Coordinator Dashboard (Steps 1 to 15: 8-Item Fixed Sidebar, Slots, Schedules, Panels, Venues, Attendance, QR/OTP Verification, Dashboard)
+  if (currentRole === 'interview_coordinator') {
+    return (
+      <CoordinatorDashboardLayout
         onSwitchToCandidateApp={onSwitchToCandidateApp}
         onSwitchToInterviewer={onSwitchToInterviewer}
         onSwitchToHrAdmin={() => handleRoleChange('hr_admin')}

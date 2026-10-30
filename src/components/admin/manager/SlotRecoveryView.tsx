@@ -256,3 +256,4 @@ export const SlotRecoveryView: React.FC = () => {
     </div>
   );
 };
+

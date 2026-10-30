@@ -438,3 +438,4 @@ export const RecruitmentManagerOverviewView: React.FC<RecruitmentManagerOverview
     </div>
   );
 };
+

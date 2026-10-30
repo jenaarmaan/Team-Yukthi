@@ -432,3 +432,4 @@ export const CandidateOverviewView: React.FC<CandidateOverviewViewProps> = ({
     </div>
   );
 };
+
