@@ -207,7 +207,7 @@ export const RecruitmentManagerDashboardLayout: React.FC<RecruitmentManagerDashb
 
             <div
               className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-violet-700 text-white font-bold text-xs flex items-center justify-center shadow-2xs"
-              title={`Logged in as ${currentAdmin.fullName} (Recruitment Manager)`}
+              title={`Logged in as ${currentAdmin.name} (Recruitment Manager)`}
             >
               {currentAdmin.avatarInitials || 'RM'}
             </div>
