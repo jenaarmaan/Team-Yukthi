@@ -17,6 +17,7 @@ import { AdminAnalytics } from './AdminAnalytics';
 import { AdminQATestRunner } from './AdminQATestRunner';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 import { HrDashboardLayout } from './hr/HrDashboardLayout';
+import { RecruitmentManagerDashboardLayout } from './manager/RecruitmentManagerDashboardLayout';
 import {
   LayoutDashboard,
   Building2,
@@ -149,6 +150,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       <HrDashboardLayout
         onSwitchToCandidateApp={onSwitchToCandidateApp}
         onSwitchToInterviewer={onSwitchToInterviewer}
+        onSwitchToHome={onSwitchToHome}
+        onLogout={onLogout}
+        onOpenRoleSwitcher={() => handleRoleChange('super_admin')}
+      />
+    );
+  }
+
+  // Dedicated Recruitment Manager Dashboard (Steps 1 to 14: 9-Item Fixed Sidebar, Funnel, Vacancies, Candidate Intelligence, Slot Recovery, Location Tracking, AI Panel)
+  if (currentRole === 'recruitment_manager') {
+    return (
+      <RecruitmentManagerDashboardLayout
+        onSwitchToCandidateApp={onSwitchToCandidateApp}
+        onSwitchToInterviewer={onSwitchToInterviewer}
+        onSwitchToHrAdmin={() => handleRoleChange('hr_admin')}
         onSwitchToHome={onSwitchToHome}
         onLogout={onLogout}
         onOpenRoleSwitcher={() => handleRoleChange('super_admin')}
