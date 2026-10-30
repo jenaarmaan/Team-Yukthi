@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CandidatesController } from '../controllers/candidatesController.ts';
+import { AuthController } from '../controllers/authController.ts';
 import {
   authenticateToken,
   requirePermission,
@@ -14,6 +15,8 @@ router.use(authenticateToken);
 // Candidate self-service
 router.get('/me', CandidatesController.getOwnProfile);
 router.put('/me', CandidatesController.updateOwnProfile);
+router.post('/me/change-password', AuthController.changePassword);
+router.put('/me/change-password', AuthController.changePassword);
 router.put('/me/locations', CandidatesController.updatePreferredLocations);
 router.post('/me/resume', CandidatesController.uploadParsedResume);
 

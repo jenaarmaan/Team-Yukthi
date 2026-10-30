@@ -8,12 +8,15 @@ import {
   ArenaProblem,
   ArenaAssessment
 } from './arenaData.ts';
+import { compileAndRunArenaCode, CodeCompilationResult } from './arenaCodeRunner.ts';
 import {
   Code,
   Award,
   Play,
   CheckCircle2,
   XCircle,
+  AlertCircle,
+  AlertTriangle,
   Clock,
   Flame,
   Trophy,
@@ -46,8 +49,12 @@ export const CandidateArenaView: React.FC = () => {
   const [editorCode, setEditorCode] = useState<string>('');
   const [isRunningCode, setIsRunningCode] = useState(false);
   const [isSubmittingCode, setIsSubmittingCode] = useState(false);
-  const [testResults, setTestResults] = useState<any[] | null>(null);
-  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [compilationOutput, setCompilationOutput] = useState<CodeCompilationResult | null>(null);
+  const [submissionFeedback, setSubmissionFeedback] = useState<{
+    accepted: boolean;
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Active Assessment Test Taker State
   const [activeAssessment, setActiveAssessment] = useState<ArenaAssessment | null>(null);
@@ -72,49 +79,77 @@ export const CandidateArenaView: React.FC = () => {
   const handleOpenProblem = (problem: ArenaProblem) => {
     setActiveProblem(problem);
     setEditorCode(problem.starterCode[editorLanguage] || problem.starterCode.javascript);
-    setTestResults(null);
-    setSubmissionSuccess(false);
+    setCompilationOutput(null);
+    setSubmissionFeedback(null);
   };
 
   const handleLanguageChange = (lang: ProgrammingLanguage) => {
     setEditorLanguage(lang);
     if (activeProblem) {
       setEditorCode(activeProblem.starterCode[lang] || activeProblem.starterCode.javascript);
-      setTestResults(null);
+      setCompilationOutput(null);
+      setSubmissionFeedback(null);
     }
   };
 
-  const handleRunTestCases = () => {
+  const handleRunTestCases = async () => {
     if (!activeProblem) return;
     setIsRunningCode(true);
-    setTestResults(null);
-    setTimeout(() => {
-      setIsRunningCode(false);
-      // Simulate running sample test cases
-      const results = activeProblem.sampleTestCases.map((tc, idx) => ({
-        index: idx + 1,
-        input: tc.input,
-        expected: tc.expectedOutput,
-        actual: tc.expectedOutput,
-        passed: true,
-        executionTimeMs: Math.floor(Math.random() * 35) + 12
-      }));
-      setTestResults(results);
-    }, 700);
+    setCompilationOutput(null);
+    setSubmissionFeedback(null);
+
+    // Evaluate against sample test cases
+    const result = await compileAndRunArenaCode(
+      activeProblem,
+      editorCode,
+      editorLanguage,
+      false
+    );
+
+    setIsRunningCode(false);
+    setCompilationOutput(result);
   };
 
-  const handleSubmitSolution = () => {
+  const handleSubmitSolution = async () => {
     if (!activeProblem) return;
     setIsSubmittingCode(true);
-    setTimeout(() => {
-      setIsSubmittingCode(false);
-      setSubmissionSuccess(true);
-      setCurrentXp((prev) => prev + activeProblem.points);
+    setSubmissionFeedback(null);
+
+    // Evaluate against ALL test cases (sample + hidden)
+    const result = await compileAndRunArenaCode(
+      activeProblem,
+      editorCode,
+      editorLanguage,
+      true
+    );
+
+    setIsSubmittingCode(false);
+    setCompilationOutput(result);
+
+    if (result.success && result.status === 'ACCEPTED') {
+      // ONLY award XP and mark as solved when all test cases pass!
+      setSubmissionFeedback({
+        accepted: true,
+        title: 'Accepted! All Test Cases Passed',
+        message: `Congratulations! Your solution passed all ${result.totalCases} test cases. +${activeProblem.points} XP added.`
+      });
       if (!activeProblem.solved) {
+        setCurrentXp((prev) => prev + activeProblem.points);
         setProblemsSolvedCount((prev) => prev + 1);
         activeProblem.solved = true;
       }
-    }, 1000);
+    } else {
+      // Wrong answers or compilation errors REJECT submission
+      const failedCase = result.results.find((r) => !r.passed);
+      setSubmissionFeedback({
+        accepted: false,
+        title: result.status === 'COMPILATION_ERROR' ? 'Compilation Failed' : 'Submission Rejected: Wrong Answer',
+        message: result.compilationError ||
+          `Failed on test case ${failedCase ? failedCase.index : ''} (${result.totalPassed} of ${result.totalCases} passed). ${
+            failedCase ? `Expected [${failedCase.expected}], but got [${failedCase.actual}].` : 'Please correct your logic.'
+          }`
+      });
+    }
   };
 
   return (
@@ -716,33 +751,108 @@ export const CandidateArenaView: React.FC = () => {
                   spellCheck={false}
                 />
 
-                {/* Test Results Output Tray */}
-                {testResults && (
-                  <div className="max-h-40 overflow-y-auto p-4 bg-slate-950 border-t border-slate-800 text-xs font-mono space-y-2">
-                    <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>All Sample Test Cases Passed!</span>
-                    </div>
-                    {testResults.map((r, i) => (
-                      <div key={i} className="flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Case {r.index}: Input [{r.input}]</span>
-                        <span className="text-emerald-400 font-bold">PASS ({r.executionTimeMs}ms)</span>
+                {/* Compilation & Test Results Output Tray */}
+                {compilationOutput && (
+                  <div className="max-h-48 overflow-y-auto p-4 bg-slate-950 border-t border-slate-800 text-xs font-mono space-y-2.5">
+                    {/* Header based on Status */}
+                    {compilationOutput.status === 'COMPILATION_ERROR' && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-rose-400 font-bold">
+                          <XCircle className="w-4 h-4 shrink-0" />
+                          <span>Compilation Error</span>
+                        </div>
+                        <div className="text-[11px] text-rose-300 bg-rose-950/60 p-2.5 rounded-lg border border-rose-800/70 whitespace-pre-wrap">
+                          {compilationOutput.compilationError || compilationOutput.summary}
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {compilationOutput.status === 'WRONG_ANSWER' && (
+                      <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+                        <div className="flex items-center gap-2 text-amber-400 font-bold">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>Wrong Answer ({compilationOutput.totalPassed} of {compilationOutput.totalCases} Passed)</span>
+                        </div>
+                        <span className="text-[10px] text-rose-400 bg-rose-950/70 px-2 py-0.5 rounded border border-rose-800 font-bold">
+                          FAILED
+                        </span>
+                      </div>
+                    )}
+
+                    {compilationOutput.status === 'ACCEPTED' && (
+                      <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+                        <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>All Test Cases Passed! ({compilationOutput.totalPassed} / {compilationOutput.totalCases})</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-800 font-bold">
+                          PASSED
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Detailed Case Breakdown (Only for runtime test results) */}
+                    {compilationOutput.status !== 'COMPILATION_ERROR' &&
+                      compilationOutput.results.map((r, i) => (
+                        <div
+                          key={i}
+                          className={`p-2.5 rounded-lg border font-mono text-[11px] space-y-1 transition-all ${
+                            r.passed
+                              ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-300'
+                              : 'bg-rose-950/30 border-rose-900/60 text-rose-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-slate-300">
+                              {r.isHidden ? `Hidden Case ${r.index}` : `Case ${r.index}`}: [{r.input}]
+                            </span>
+                            <span className={r.passed ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                              {r.passed ? `PASS (${r.executionTimeMs}ms)` : 'FAIL'}
+                            </span>
+                          </div>
+                          {!r.passed && (
+                            <div className="pt-1 text-[10px] space-y-0.5 text-slate-300 pl-2 border-l-2 border-rose-500">
+                              <div>Expected: <span className="text-emerald-400 font-bold">{r.expected}</span></div>
+                              <div>Actual Output: <span className="text-rose-400 font-bold">{r.actual}</span></div>
+                              {r.error && <div className="text-rose-400">Runtime Error: {r.error}</div>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                   </div>
                 )}
 
-                {/* Submission Success Banner */}
-                {submissionSuccess && (
-                  <div className="p-4 bg-emerald-950 border-t border-emerald-800 text-emerald-200 text-xs flex items-center justify-between animate-fade-in">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                {/* Submission Feedback Banner */}
+                {submissionFeedback && (
+                  <div
+                    className={`p-4 border-t text-xs flex items-center justify-between animate-fade-in ${
+                      submissionFeedback.accepted
+                        ? 'bg-emerald-950/90 border-emerald-800 text-emerald-200'
+                        : 'bg-rose-950/90 border-rose-800 text-rose-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {submissionFeedback.accepted ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                      )}
                       <div>
-                        <strong className="block text-emerald-300">Accepted! Solution Evaluated Successfully</strong>
-                        <span>+{activeProblem.points} XP added to your candidate profile.</span>
+                        <strong className={`block font-bold ${submissionFeedback.accepted ? 'text-emerald-300' : 'text-rose-300'}`}>
+                          {submissionFeedback.title}
+                        </strong>
+                        <span className="text-[11px] leading-tight opacity-90">{submissionFeedback.message}</span>
                       </div>
                     </div>
-                    <span className="px-2 py-1 rounded bg-emerald-800 text-emerald-100 text-[10px] font-bold">SOLVED</span>
+                    <span
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                        submissionFeedback.accepted
+                          ? 'bg-emerald-800 text-emerald-100'
+                          : 'bg-rose-900 text-rose-200'
+                      }`}
+                    >
+                      {submissionFeedback.accepted ? 'SOLVED' : 'REJECTED'}
+                    </span>
                   </div>
                 )}
 

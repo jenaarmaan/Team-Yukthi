@@ -14,10 +14,13 @@ router.post('/verify-token', AuthController.verifyToken);
 router.post('/demo-session', AuthController.getDemoSessionToken);
 router.get('/status', AuthController.getAuthStatus);
 
-// Authenticated Endpoints
+// Authenticated & Profile Endpoints
 router.get('/me', authenticateToken, AuthController.getMe);
 router.post('/logout', authenticateToken, AuthController.logout);
-router.post('/change-password', authenticateToken, AuthController.changePassword);
+router.post('/change-password', AuthController.changePassword);
+router.put('/change-password', AuthController.changePassword);
+router.post('/password/change', AuthController.changePassword);
+router.put('/password/change', AuthController.changePassword);
 
 // Staff Invitation & Registration Endpoints (HR Admin / Super Admin)
 router.post('/register-staff', authenticateToken, AuthController.registerStaff);

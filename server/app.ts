@@ -26,8 +26,9 @@ export const createApp = (): Express => {
   // Request logging
   app.use(requestLogger);
 
-  // Mount API v1 router
+  // Mount API routers (/api/v1 authoritative, /api alias)
   app.use('/api/v1', apiRouter);
+  app.use('/api', apiRouter);
 
 
   // Fallback for unmatched API routes

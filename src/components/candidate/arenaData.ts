@@ -263,6 +263,227 @@ export const ARENA_PROBLEMS: ArenaProblem[] = [
       typescript: `function trap(height: number[]): number {\n  let left = 0, right = height.length - 1;\n  let maxLeft = 0, maxRight = 0, water = 0;\n  while (left < right) {\n    if (height[left] <= height[right]) {\n      if (height[left] >= maxLeft) maxLeft = height[left];\n      else water += maxLeft - height[left];\n      left++;\n    } else {\n      if (height[right] >= maxRight) maxRight = height[right];\n      else water += maxRight - height[right];\n      right--;\n    }\n  }\n  return water;\n}`
     },
     solved: false
+  },
+  {
+    id: 'prob_cn_01',
+    title: 'Defang IPv4 Address & Checksum Validation',
+    subject: 'Computer Networks',
+    topic: 'IP Protocols & Parsing',
+    difficulty: 'Easy',
+    points: 50,
+    acceptanceRate: 89.2,
+    description:
+      'In network security and threat intelligence log analysis, an IPv4 address must be defanged before display to prevent automated web crawlers and security scrapers from misinterpreting the IP as an active hyperlink.\n\nGiven a valid IPv4 address string `address`, return a defanged version of that IP address where each period `"."` is replaced with `"[.]"`.',
+    constraints: [
+      'address is a valid IPv4 address consisting of 4 decimal octets separated by single dots.',
+      '7 <= address.length <= 15'
+    ],
+    sampleTestCases: [
+      { input: 'address = "192.168.1.1"', expectedOutput: '"192[.]168[.]1[.]1"' },
+      { input: 'address = "10.0.0.255"', expectedOutput: '"10[.]0[.]0[.]255"' }
+    ],
+    hiddenTestCases: [
+      { input: 'address = "127.0.0.1"', expectedOutput: '"127[.]0[.]0[.]1"', isHidden: true },
+      { input: 'address = "172.16.254.1"', expectedOutput: '"172[.]16[.]254[.]1"', isHidden: true }
+    ],
+    starterCode: {
+      javascript: `function defangIPaddr(address) {\n  return address.split('.').join('[.]');\n}`,
+      python: `def defangIPaddr(address: str) -> str:\n    return address.replace(".", "[.]")`,
+      java: `class Solution {\n    public String defangIPaddr(String address) {\n        return address.replace(".", "[.]");\n    }\n}`,
+      cpp: `#include <string>\n\nclass Solution {\npublic:\n    std::string defangIPaddr(std::string address) {\n        std::string res = "";\n        for (char c : address) {\n            if (c == '.') res += "[.]";\n            else res += c;\n        }\n        return res;\n    }\n};`,
+      typescript: `function defangIPaddr(address: string): string {\n  return address.split('.').join('[.]');\n}`
+    },
+    solved: false
+  },
+  {
+    id: 'prob_cn_02',
+    title: 'TCP Sliding Window Flow Control',
+    subject: 'Computer Networks',
+    topic: 'Transport Layer & Flow Control',
+    difficulty: 'Medium',
+    points: 100,
+    acceptanceRate: 64.8,
+    description:
+      'In the Transmission Control Protocol (TCP), the sliding window protocol provides end-to-end flow control to ensure the sender does not overwhelm the receiver buffer.\n\nGiven the total number of packets `n`, the advertised receiver window size `winSize`, and an array of acknowledged packet sequence numbers `acks`, determine:\n1. The sequence number of the next expected unacknowledged packet at the left edge of the window.\n2. The number of new packets the sender is currently permitted to transmit into the channel without exceeding window capacity.\n\nReturn the answer as an array of two integers: `[nextExpectedPacket, availableWindowSlots]`.',
+    constraints: [
+      '1 <= n <= 10000',
+      '1 <= winSize <= 1000',
+      'acks contains strictly increasing acknowledged sequence numbers in the range [0, n-1].'
+    ],
+    sampleTestCases: [
+      {
+        input: 'n = 10, winSize = 4, acks = [0, 1, 2]',
+        expectedOutput: '[3, 4]',
+        explanation: 'Packets 0, 1, and 2 are acknowledged. The window advances to packet 3, and sender can send 4 packets (3, 4, 5, 6).'
+      },
+      {
+        input: 'n = 8, winSize = 3, acks = [0]',
+        expectedOutput: '[1, 3]',
+        explanation: 'Packet 0 is acknowledged. Next unacknowledged packet is 1 with 3 available window slots.'
+      }
+    ],
+    hiddenTestCases: [
+      { input: 'n = 5, winSize = 3, acks = [0, 1, 2, 3]', expectedOutput: '[4, 1]', isHidden: true },
+      { input: 'n = 6, winSize = 4, acks = []', expectedOutput: '[0, 4]', isHidden: true }
+    ],
+    starterCode: {
+      javascript: `function tcpFlowControl(n, winSize, acks) {\n  const ackSet = new Set(acks);\n  let nextExpected = 0;\n  while (ackSet.has(nextExpected) && nextExpected < n) {\n    nextExpected++;\n  }\n  const available = Math.min(winSize, Math.max(0, n - nextExpected));\n  return [nextExpected, available];\n}`,
+      python: `def tcpFlowControl(n: int, winSize: int, acks: list[int]) -> list[int]:\n    ack_set = set(acks)\n    next_exp = 0\n    while next_exp in ack_set and next_exp < n:\n        next_exp += 1\n    available = min(winSize, max(0, n - next_exp))\n    return [next_exp, available]`,
+      java: `class Solution {\n    public int[] tcpFlowControl(int n, int winSize, int[] acks) {\n        java.util.Set<Integer> set = new java.util.HashSet<>();\n        for (int a : acks) set.add(a);\n        int nextExp = 0;\n        while (set.contains(nextExp) && nextExp < n) nextExp++;\n        int avail = Math.min(winSize, Math.max(0, n - nextExp));\n        return new int[]{nextExp, avail};\n    }\n}`,
+      cpp: `#include <vector>\n#include <unordered_set>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> tcpFlowControl(int n, int winSize, std::vector<int>& acks) {\n        std::unordered_set<int> set(acks.begin(), acks.end());\n        int nextExp = 0;\n        while (set.count(nextExp) && nextExp < n) nextExp++;\n        int avail = std::min(winSize, std::max(0, n - nextExp));\n        return {nextExp, avail};\n    }\n};`,
+      typescript: `function tcpFlowControl(n: number, winSize: number, acks: number[]): [number, number] {\n  const ackSet = new Set(acks);\n  let nextExpected = 0;\n  while (ackSet.has(nextExpected) && nextExpected < n) {\n    nextExpected++;\n  }\n  const available = Math.min(winSize, Math.max(0, n - nextExpected));\n  return [nextExpected, available];\n}`
+    },
+    solved: false
+  },
+  {
+    id: 'prob_cn_03',
+    title: 'IPv4 CIDR Subnet & Broadcast Resolver',
+    subject: 'Computer Networks',
+    topic: 'IP Addressing & Subnetting',
+    difficulty: 'Medium',
+    points: 100,
+    acceptanceRate: 57.3,
+    description:
+      'Given an IPv4 address with CIDR prefix notation string `cidr` (such as `"192.168.10.75/24"`), calculate the Network Address (the first address in the block with host bits set to 0) and the Broadcast Address (the last address in the block with host bits set to 1).\n\nReturn the result as a two-element array: `[networkAddress, broadcastAddress]`.',
+    constraints: [
+      'cidr is formatted as "A.B.C.D/M" where 0 <= A, B, C, D <= 255 and 1 <= M <= 30.'
+    ],
+    sampleTestCases: [
+      { input: 'cidr = "192.168.10.75/24"', expectedOutput: '["192.168.10.0", "192.168.10.255"]' },
+      { input: 'cidr = "10.0.8.1/16"', expectedOutput: '["10.0.0.0", "10.0.255.255"]' }
+    ],
+    hiddenTestCases: [
+      { input: 'cidr = "172.16.5.14/28"', expectedOutput: '["172.16.5.0", "172.16.5.15"]', isHidden: true },
+      { input: 'cidr = "192.168.1.130/26"', expectedOutput: '["192.168.1.128", "192.168.1.191"]', isHidden: true }
+    ],
+    starterCode: {
+      javascript: `function calculateSubnet(cidr) {\n  const [ipStr, maskStr] = cidr.split('/');\n  const maskBits = parseInt(maskStr, 10);\n  const octets = ipStr.split('.').map(Number);\n  const ipNum = ((octets[0] << 24) >>> 0) + ((octets[1] << 16) >>> 0) + ((octets[2] << 8) >>> 0) + (octets[3] >>> 0);\n  const netmask = maskBits === 0 ? 0 : (((0xFFFFFFFF << (32 - maskBits))) >>> 0);\n  const netNum = (ipNum & netmask) >>> 0;\n  const bcastNum = (netNum | (~netmask >>> 0)) >>> 0;\n  const toIp = (num) => [(num >>> 24) & 255, (num >>> 16) & 255, (num >>> 8) & 255, num & 255].join('.');\n  return [toIp(netNum), toIp(bcastNum)];\n}`,
+      python: `def calculateSubnet(cidr: str) -> list[str]:\n    ip_str, mask_str = cidr.split("/")\n    mask_bits = int(mask_str)\n    octets = list(map(int, ip_str.split(".")))\n    ip_num = (octets[0] << 24) | (octets[1] << 16) | (octets[2] << 8) | octets[3]\n    netmask = ((1 << 32) - 1) ^ ((1 << (32 - mask_bits)) - 1)\n    net_num = ip_num & netmask\n    bcast_num = net_num | ((1 << (32 - mask_bits)) - 1)\n    to_ip = lambda n: f"{(n >> 24) & 255}.{(n >> 16) & 255}.{(n >> 8) & 255}.{n & 255}"\n    return [to_ip(net_num), to_ip(bcast_num)]`,
+      java: `class Solution {\n    public String[] calculateSubnet(String cidr) {\n        String[] parts = cidr.split("/");\n        int mask = Integer.parseInt(parts[1]);\n        String[] oct = parts[0].split("\\\\.");\n        long ip = (Long.parseLong(oct[0]) << 24) | (Long.parseLong(oct[1]) << 16) | (Long.parseLong(oct[2]) << 8) | Long.parseLong(oct[3]);\n        long netmask = mask == 0 ? 0 : ((0xFFFFFFFFL << (32 - mask)) & 0xFFFFFFFFL);\n        long net = ip & netmask;\n        long bcast = net | (~netmask & 0xFFFFFFFFL);\n        return new String[]{ toIp(net), toIp(bcast) };\n    }\n    private String toIp(long n) {\n        return ((n >> 24) & 255) + "." + ((n >> 16) & 255) + "." + ((n >> 8) & 255) + "." + (n & 255);\n    }\n}`,
+      cpp: `#include <string>\n#include <vector>\n#include <sstream>\n\nclass Solution {\npublic:\n    std::vector<std::string> calculateSubnet(std::string cidr) {\n        size_t slash = cidr.find('/');\n        std::string ipStr = cidr.substr(0, slash);\n        int mask = std::stoi(cidr.substr(slash + 1));\n        std::stringstream ss(ipStr);\n        std::string item;\n        unsigned int ip = 0;\n        while (std::getline(ss, item, '.')) {\n            ip = (ip << 8) | std::stoi(item);\n        }\n        unsigned int netmask = mask == 0 ? 0 : (0xFFFFFFFF << (32 - mask));\n        unsigned int net = ip & netmask;\n        unsigned int bcast = net | (~netmask);\n        auto toIp = [](unsigned int n) {\n            return std::to_string((n >> 24) & 255) + "." + std::to_string((n >> 16) & 255) + "." + std::to_string((n >> 8) & 255) + "." + std::to_string(n & 255);\n        };\n        return {toIp(net), toIp(bcast)};\n    }\n};`,
+      typescript: `function calculateSubnet(cidr: string): [string, string] {\n  const [ipStr, maskStr] = cidr.split('/');\n  const maskBits = parseInt(maskStr, 10);\n  const octets = ipStr.split('.').map(Number);\n  const ipNum = ((octets[0] << 24) >>> 0) + ((octets[1] << 16) >>> 0) + ((octets[2] << 8) >>> 0) + (octets[3] >>> 0);\n  const netmask = maskBits === 0 ? 0 : (((0xFFFFFFFF << (32 - maskBits))) >>> 0);\n  const netNum = (ipNum & netmask) >>> 0;\n  const bcastNum = (netNum | (~netmask >>> 0)) >>> 0;\n  const toIp = (num: number) => [(num >>> 24) & 255, (num >>> 16) & 255, (num >>> 8) & 255, num & 255].join('.');\n  return [toIp(netNum), toIp(bcastNum)];\n}`
+    },
+    solved: false
+  },
+  {
+    id: 'prob_oop_01',
+    title: 'Design a Thread-Safe LRU Cache',
+    subject: 'OOP',
+    topic: 'Encapsulation & Design Patterns',
+    difficulty: 'Medium',
+    points: 100,
+    acceptanceRate: 62.1,
+    description:
+      'Design an Object-Oriented Least Recently Used (LRU) Cache adhering to clean class encapsulation principles.\n\nThe class must support:\n- `get(key)`: Returns the value of the key if it exists in the cache, otherwise returns `-1`.\n- `put(key, value)`: Updates the value if the key exists, or inserts the key-value pair. When cache capacity is exceeded, evict the least recently used key before inserting.\n\nThe simulation function `runLRUCache(capacity, operations, args)` receives a sequence of operations and arguments, and returns the output array.',
+    constraints: [
+      '1 <= capacity <= 3000',
+      '0 <= key <= 10^4',
+      '0 <= value <= 10^5'
+    ],
+    sampleTestCases: [
+      {
+        input: 'capacity = 2, operations = ["put","put","get","put","get","get"], args = [[1,1],[2,2],[1],[3,3],[2],[3]]',
+        expectedOutput: '[null, null, 1, null, -1, 3]',
+        explanation: 'LRU evicts key 2 when inserting key 3 because key 1 was recently accessed.'
+      },
+      {
+        input: 'capacity = 1, operations = ["put","get","put","get"], args = [[2,1],[2],[3,2],[2]]',
+        expectedOutput: '[null, 1, null, -1]'
+      }
+    ],
+    hiddenTestCases: [
+      {
+        input: 'capacity = 2, operations = ["get","put","get"], args = [[2],[2,6],[2]]',
+        expectedOutput: '[-1, null, 6]',
+        isHidden: true
+      }
+    ],
+    starterCode: {
+      javascript: `class LRUCache {\n  constructor(capacity) {\n    this.capacity = capacity;\n    this.cache = new Map();\n  }\n  get(key) {\n    if (!this.cache.has(key)) return -1;\n    const val = this.cache.get(key);\n    this.cache.delete(key);\n    this.cache.set(key, val);\n    return val;\n  }\n  put(key, value) {\n    if (this.cache.has(key)) this.cache.delete(key);\n    this.cache.set(key, value);\n    if (this.cache.size > this.capacity) {\n      const oldestKey = this.cache.keys().next().value;\n      this.cache.delete(oldestKey);\n    }\n  }\n}\n\nfunction runLRUCache(capacity, operations, args) {\n  const cache = new LRUCache(capacity);\n  const results = [];\n  for (let i = 0; i < operations.length; i++) {\n    const op = operations[i];\n    if (op === 'get') results.push(cache.get(args[i][0]));\n    else if (op === 'put') {\n      cache.put(args[i][0], args[i][1]);\n      results.push(null);\n    }\n  }\n  return results;\n}`,
+      python: `from collections import OrderedDict\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        self.cache.move_to_end(key)\n        return self.cache[key]\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            self.cache.move_to_end(key)\n        self.cache[key] = value\n        if len(self.cache) > self.capacity:\n            self.cache.popitem(last=False)\n\ndef runLRUCache(capacity: int, operations: list[str], args: list[list[int]]) -> list:\n    cache = LRUCache(capacity)\n    results = []\n    for op, arg in zip(operations, args):\n        if op == "get": results.append(cache.get(arg[0]))\n        elif op == "put":\n            cache.put(arg[0], arg[1])\n            results.append(None)\n    return results`,
+      java: `class LRUCache {\n    private final int capacity;\n    private final java.util.LinkedHashMap<Integer, Integer> map;\n    public LRUCache(int capacity) {\n        this.capacity = capacity;\n        this.map = new java.util.LinkedHashMap<>(capacity, 0.75f, true);\n    }\n    public int get(int key) { return map.getOrDefault(key, -1); }\n    public void put(int key, int value) {\n        map.put(key, value);\n        if (map.size() > capacity) {\n            int oldest = map.keySet().iterator().next();\n            map.remove(oldest);\n        }\n    }\n}`,
+      cpp: `#include <unordered_map>\n#include <list>\n#include <vector>\n\nclass LRUCache {\n    int cap;\n    std::list<std::pair<int, int>> items;\n    std::unordered_map<int, std::list<std::pair<int, int>>::iterator> map;\npublic:\n    LRUCache(int capacity) : cap(capacity) {}\n    int get(int key) {\n        if (!map.count(key)) return -1;\n        items.splice(items.begin(), items, map[key]);\n        return map[key]->second;\n    }\n    void put(int key, int value) {\n        if (map.count(key)) {\n            items.splice(items.begin(), items, map[key]);\n            map[key]->second = value;\n            return;\n        }\n        if (items.size() == cap) {\n            int delKey = items.back().first;\n            items.pop_back();\n            map.erase(delKey);\n        }\n        items.push_front({key, value});\n        map[key] = items.begin();\n    }\n};`,
+      typescript: `class LRUCache {\n  private capacity: number;\n  private cache: Map<number, number>;\n  constructor(capacity: number) {\n    this.capacity = capacity;\n    this.cache = new Map();\n  }\n  get(key: number): number {\n    if (!this.cache.has(key)) return -1;\n    const val = this.cache.get(key)!;\n    this.cache.delete(key);\n    this.cache.set(key, val);\n    return val;\n  }\n  put(key: number, value: number): void {\n    if (this.cache.has(key)) this.cache.delete(key);\n    this.cache.set(key, value);\n    if (this.cache.size > this.capacity) {\n      const oldestKey = this.cache.keys().next().value;\n      if (oldestKey !== undefined) this.cache.delete(oldestKey);\n    }\n  }\n}\n\nfunction runLRUCache(capacity: number, operations: string[], args: number[][]): (number | null)[] {\n  const cache = new LRUCache(capacity);\n  const results: (number | null)[] = [];\n  for (let i = 0; i < operations.length; i++) {\n    const op = operations[i];\n    if (op === 'get') results.push(cache.get(args[i][0]));\n    else if (op === 'put') {\n      cache.put(args[i][0], args[i][1]);\n      results.push(null);\n    }\n  }\n  return results;\n}`
+    },
+    solved: false
+  },
+  {
+    id: 'prob_oop_02',
+    title: 'Notification Dispatcher (Factory & Strategy Pattern)',
+    subject: 'OOP',
+    topic: 'Polymorphism & Factory Pattern',
+    difficulty: 'Easy',
+    points: 50,
+    acceptanceRate: 81.5,
+    description:
+      'In recruitment systems like NIYOJAN, hiring event updates must be dispatched to candidates via multiple communication channels (EMAIL, SMS, IN_APP).\n\nImplement an Object-Oriented Notification Dispatcher using Factory and Strategy patterns.\n\nGiven a communication channel string `channel` and message `msg`, dispatch the formatted message:\n- `"EMAIL"`: returns `"EMAIL:[<sanitized_msg>]"`\n- `"SMS"`: returns `"SMS:[<sanitized_msg>]"`\n- `"IN_APP"`: returns `"IN_APP:[<sanitized_msg>]"`\n- Any unsupported channel returns `"UNSUPPORTED"`.' ,
+    constraints: [
+      'channel is an uppercase string.',
+      '1 <= msg.length <= 500'
+    ],
+    sampleTestCases: [
+      { input: 'channel = "EMAIL", msg = "Interview Confirmed"', expectedOutput: '"EMAIL:[Interview Confirmed]"' },
+      { input: 'channel = "SMS", msg = "OTP: 839201"', expectedOutput: '"SMS:[OTP: 839201]"' },
+      { input: 'channel = "WHATSAPP", msg = "Hello"', expectedOutput: '"UNSUPPORTED"' }
+    ],
+    hiddenTestCases: [
+      { input: 'channel = "IN_APP", msg = "Slot #4 Allocated"', expectedOutput: '"IN_APP:[Slot #4 Allocated]"', isHidden: true }
+    ],
+    starterCode: {
+      javascript: `class ChannelFactory {\n  static dispatch(channel, msg) {\n    if (channel === 'EMAIL' || channel === 'SMS' || channel === 'IN_APP') {\n      return \`\${channel}:[\${msg}]\`;\n    }\n    return 'UNSUPPORTED';\n  }\n}\n\nfunction dispatchNotification(channel, msg) {\n  return ChannelFactory.dispatch(channel, msg);\n}`,
+      python: `class ChannelFactory:\n    @staticmethod\n    def dispatch(channel: str, msg: str) -> str:\n        if channel in ["EMAIL", "SMS", "IN_APP"]:\n            return f"{channel}:[{msg}]"\n        return "UNSUPPORTED"\n\ndef dispatchNotification(channel: str, msg: str) -> str:\n    return ChannelFactory.dispatch(channel, msg)`,
+      java: `class Solution {\n    public String dispatchNotification(String channel, String msg) {\n        if ("EMAIL".equals(channel) || "SMS".equals(channel) || "IN_APP".equals(channel)) {\n            return channel + ":[" + msg + "]";\n        }\n        return "UNSUPPORTED";\n    }\n}`,
+      cpp: `#include <string>\n\nclass Solution {\npublic:\n    std::string dispatchNotification(std::string channel, std::string msg) {\n        if (channel == "EMAIL" || channel == "SMS" || channel == "IN_APP") {\n            return channel + ":[" + msg + "]";\n        }\n        return "UNSUPPORTED";\n    }\n};`,
+      typescript: `class ChannelFactory {\n  static dispatch(channel: string, msg: string): string {\n    if (['EMAIL', 'SMS', 'IN_APP'].includes(channel)) {\n      return \`\${channel}:[\${msg}]\`;\n    }\n    return 'UNSUPPORTED';\n  }\n}\n\nfunction dispatchNotification(channel: string, msg: string): string {\n  return ChannelFactory.dispatch(channel, msg);\n}`
+    },
+    solved: false
+  },
+  {
+    id: 'prob_oop_03',
+    title: 'Banking Transaction Ledger & State Machine',
+    subject: 'OOP',
+    topic: 'Encapsulation & State Invariants',
+    difficulty: 'Medium',
+    points: 100,
+    acceptanceRate: 67.4,
+    description:
+      'Implement an Object-Oriented Account ledger that enforces data encapsulation and state invariants.\n\nGiven an `initialBalance` and a list of transactions `transactions` where each transaction is `["DEPOSIT", amount]` or `["WITHDRAW", amount]`:\n- A `"DEPOSIT"` increases the account balance by `amount`.\n- A `"WITHDRAW"` decreases the account balance by `amount` if `balance >= amount`.\n- If a `"WITHDRAW"` exceeds the current balance, the transaction is rejected and an insufficient funds penalty fee of 5 is deducted if `balance >= 5` (otherwise balance remains unchanged).\n\nReturn the final balance after processing all transactions in sequence.',
+    constraints: [
+      '0 <= initialBalance <= 10^6',
+      '1 <= transactions.length <= 1000',
+      'amount > 0'
+    ],
+    sampleTestCases: [
+      {
+        input: 'initialBalance = 100, transactions = [["DEPOSIT", 50], ["WITHDRAW", 30]]',
+        expectedOutput: '120'
+      },
+      {
+        input: 'initialBalance = 50, transactions = [["WITHDRAW", 80]]',
+        expectedOutput: '45',
+        explanation: 'Withdrawal of 80 rejected (balance 50 < 80); penalty fee of 5 deducted.'
+      }
+    ],
+    hiddenTestCases: [
+      {
+        input: 'initialBalance = 200, transactions = [["DEPOSIT", 100], ["WITHDRAW", 150], ["WITHDRAW", 50]]',
+        expectedOutput: '100',
+        isHidden: true
+      },
+      {
+        input: 'initialBalance = 4, transactions = [["WITHDRAW", 10]]',
+        expectedOutput: '4',
+        isHidden: true
+      }
+    ],
+    starterCode: {
+      javascript: `class BankAccount {\n  constructor(initialBalance) {\n    this._balance = initialBalance;\n  }\n  deposit(amount) {\n    this._balance += amount;\n  }\n  withdraw(amount) {\n    if (this._balance >= amount) {\n      this._balance -= amount;\n    } else if (this._balance >= 5) {\n      this._balance -= 5;\n    }\n  }\n  getBalance() {\n    return this._balance;\n  }\n}\n\nfunction processAccountLedger(initialBalance, transactions) {\n  const account = new BankAccount(initialBalance);\n  for (const [type, amount] of transactions) {\n    if (type === 'DEPOSIT') account.deposit(amount);\n    else if (type === 'WITHDRAW') account.withdraw(amount);\n  }\n  return account.getBalance();\n}`,
+      python: `class BankAccount:\n    def __init__(self, initial_balance: int):\n        self._balance = initial_balance\n    def deposit(self, amount: int):\n        self._balance += amount\n    def withdraw(self, amount: int):\n        if self._balance >= amount:\n            self._balance -= amount\n        elif self._balance >= 5:\n            self._balance -= 5\n    def get_balance(self) -> int:\n        return self._balance\n\ndef processAccountLedger(initialBalance: int, transactions: list[list]) -> int:\n    account = BankAccount(initialBalance)\n    for t_type, amount in transactions:\n        if t_type == "DEPOSIT": account.deposit(amount)\n        elif t_type == "WITHDRAW": account.withdraw(amount)\n    return account.get_balance()`,
+      java: `class BankAccount {\n    private int balance;\n    public BankAccount(int initialBalance) { this.balance = initialBalance; }\n    public void deposit(int amount) { this.balance += amount; }\n    public void withdraw(int amount) {\n        if (this.balance >= amount) this.balance -= amount;\n        else if (this.balance >= 5) this.balance -= 5;\n    }\n    public int getBalance() { return this.balance; }\n}`,
+      cpp: `#include <vector>\n#include <string>\n\nclass BankAccount {\n    int balance;\npublic:\n    BankAccount(int b) : balance(b) {}\n    void deposit(int amt) { balance += amt; }\n    void withdraw(int amt) {\n        if (balance >= amt) balance -= amt;\n        else if (balance >= 5) balance -= 5;\n    }\n    int getBalance() const { return balance; }\n};`,
+      typescript: `class BankAccount {\n  private _balance: number;\n  constructor(initialBalance: number) {\n    this._balance = initialBalance;\n  }\n  deposit(amount: number): void {\n    this._balance += amount;\n  }\n  withdraw(amount: number): void {\n    if (this._balance >= amount) {\n      this._balance -= amount;\n    } else if (this._balance >= 5) {\n      this._balance -= 5;\n    }\n  }\n  getBalance(): number {\n    return this._balance;\n  }\n}\n\nfunction processAccountLedger(initialBalance: number, transactions: [string, number][]): number {\n  const account = new BankAccount(initialBalance);\n  for (const [type, amount] of transactions) {\n    if (type === 'DEPOSIT') account.deposit(amount);\n    else if (type === 'WITHDRAW') account.withdraw(amount);\n  }\n  return account.getBalance();\n}`
+    },
+    solved: false
   }
 ];
 

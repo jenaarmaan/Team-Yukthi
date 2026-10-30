@@ -55,16 +55,12 @@ export type CandidateSidebarTab =
 
 interface CandidateDashboardLayoutProps {
   initialTab?: CandidateSidebarTab;
-  onSwitchToAdmin?: () => void;
-  onSwitchToInterviewer?: () => void;
   onSwitchToHome?: () => void;
   onLogout?: () => void;
 }
 
 export const CandidateDashboardLayout: React.FC<CandidateDashboardLayoutProps> = ({
   initialTab,
-  onSwitchToAdmin,
-  onSwitchToInterviewer,
   onSwitchToHome,
   onLogout
 }) => {
@@ -150,10 +146,6 @@ export const CandidateDashboardLayout: React.FC<CandidateDashboardLayoutProps> =
         onOpenAuth={() => {}}
         onOpenProfileTab={() => setActiveTab('profile')}
         onLogout={onLogout || handleLogout}
-        onSelectWorkspace={(ws) => {
-          if (ws === 'hr_admin' && onSwitchToAdmin) onSwitchToAdmin();
-          if (ws === 'interviewer' && onSwitchToInterviewer) onSwitchToInterviewer();
-        }}
       />
 
       {/* 2. MAIN BODY: FIXED LEFT SIDEBAR + CONTENT AREA */}
@@ -384,6 +376,7 @@ export const CandidateDashboardLayout: React.FC<CandidateDashboardLayoutProps> =
               onNavigateToArena={() => setActiveTab('arena')}
               onLogout={handleLogout}
               onOpenScenarioSwitcher={() => setShowScenarioSwitcher(true)}
+              onProfileUpdated={refreshData}
             />
           )}
 

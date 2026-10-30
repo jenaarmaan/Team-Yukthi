@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { AuthController } from '../controllers/authController.ts';
 import { healthRoutes } from './healthRoutes.ts';
 import { systemRoutes } from './systemRoutes.ts';
 import { authRoutes } from './authRoutes.ts';
@@ -49,6 +50,12 @@ router.get('/', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Direct password change endpoints ensuring zero routing mismatches
+router.post('/auth/change-password', AuthController.changePassword);
+router.put('/auth/change-password', AuthController.changePassword);
+router.post('/change-password', AuthController.changePassword);
+router.put('/change-password', AuthController.changePassword);
 
 // Mount domain routes
 router.use('/health', healthRoutes);

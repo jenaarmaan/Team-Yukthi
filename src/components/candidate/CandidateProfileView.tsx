@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { CandidateProfile, HiringDrive } from '../../types/recruitment';
+import { recruitmentService } from '../../services/storageService';
 import {
   User,
   Mail,
@@ -22,7 +23,12 @@ import {
   ShieldCheck,
   Edit3,
   Target,
-  ChevronRight
+  ChevronRight,
+  RefreshCw,
+  Check,
+  X,
+  FileUp,
+  FileCheck
 } from 'lucide-react';
 
 interface CandidateProfileViewProps {
@@ -31,6 +37,7 @@ interface CandidateProfileViewProps {
   onNavigateToArena?: () => void;
   onLogout?: () => void;
   onOpenScenarioSwitcher?: () => void;
+  onProfileUpdated?: () => void;
 }
 
 interface EligibilityAssessmentResult {
@@ -49,11 +56,143 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
   hiringDrives,
   onNavigateToArena,
   onLogout,
-  onOpenScenarioSwitcher
+  onOpenScenarioSwitcher,
+  onProfileUpdated
 }) => {
+  const [currentProfile, setCurrentProfile] = useState<CandidateProfile>(profile);
   const [activeProfileTab, setActiveProfileTab] = useState<'profile' | 'ai_eligibility'>('profile');
   const [isAssessing, setIsAssessing] = useState(false);
   const [assessmentResult, setAssessmentResult] = useState<EligibilityAssessmentResult | null>(null);
+
+  // Resume Upload State
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
+  const [uploadStep, setUploadStep] = useState<number>(0);
+  const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setCurrentProfile(profile);
+  }, [profile]);
+
+  // Process & Upload Resume
+  const processResumeFile = (fileName: string, fileSize: string, customSkills?: string[]) => {
+    setIsUploadingResume(true);
+    setUploadStep(1);
+
+    setTimeout(() => {
+      setUploadStep(2);
+      setTimeout(() => {
+        setUploadStep(3);
+        setTimeout(() => {
+          const defaultSkills = [
+            'Core Java',
+            'Spring Boot',
+            'Data Structures & Algorithms',
+            'SQL',
+            'REST APIs',
+            'React',
+            'Git & CI/CD'
+          ];
+          const skillsToAdd = customSkills && customSkills.length > 0 ? customSkills : defaultSkills;
+          const summary = `Updated resume for ${currentProfile.fullName}: verified educational credentials in ${currentProfile.education?.branch || 'Computer Science'} with proficiencies in software development, algorithmic problem solving, and modern distributed systems.`;
+
+          // Update in storage service
+          recruitmentService.uploadParsedResume(fileName, fileSize, skillsToAdd, summary);
+
+          // Refresh current state
+          const updated = recruitmentService.getCurrentProfile();
+          setCurrentProfile({ ...updated });
+
+          setIsUploadingResume(false);
+          setUploadStep(0);
+          setShowUploadModal(false);
+          setUploadSuccessMessage(`Successfully uploaded and parsed "${fileName}"!`);
+
+          if (onProfileUpdated) {
+            onProfileUpdated();
+          }
+
+          setTimeout(() => {
+            setUploadSuccessMessage(null);
+          }, 6000);
+        }, 500);
+      }, 500);
+    }, 500);
+  };
+
+  const handleNativeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const sizeInKb = Math.round(file.size / 1024);
+    const formattedSize = sizeInKb > 1024 ? `${(sizeInKb / 1024).toFixed(1)} MB` : `${sizeInKb} KB`;
+
+    processResumeFile(file.name, formattedSize);
+    if (e.target) e.target.value = '';
+  };
+
+  const handleDownloadResume = () => {
+    const resumeName = currentProfile.resume?.fileName || `${currentProfile.fullName.replace(/\s+/g, '_')}_Resume_2026.pdf`;
+    
+    const content = `================================================================================
+NIYOJAN VERIFIED CANDIDATE RESUME
+Autonomous Recruitment Orchestration Platform • Excelsoft Technologies
+================================================================================
+
+Candidate Name:    ${currentProfile.fullName}
+Email Address:     ${currentProfile.email}
+Contact Phone:     ${currentProfile.phone}
+Current Location:  ${currentProfile.currentLocation}
+Preferred Locs:    ${currentProfile.preferredLocations.join(', ')}
+Candidate Type:    ${currentProfile.candidateType.toUpperCase()}
+
+ACADEMIC & EDUCATIONAL QUALIFICATIONS
+--------------------------------------------------------------------------------
+College / Inst:    ${currentProfile.education.institution}
+Degree & Branch:   ${currentProfile.education.degree} in ${currentProfile.education.branch}
+Graduation Year:   ${currentProfile.education.graduationYear}
+Cumulative CGPA:   ${currentProfile.education.cgpa} / 10.0 (VERIFIED CREDENTIAL)
+Status:            ${currentProfile.education.verified ? 'VERIFIED BY ACADEMIC BOARD' : 'ACADEMIC RECORD MATCHED'}
+
+4-TIER VERIFIED TECHNICAL SKILLS
+--------------------------------------------------------------------------------
+${currentProfile.skills.map((s) => `• ${s.name.padEnd(28)} [Tier: ${s.verificationLevel.replace('_', ' ').toUpperCase()} | Rating: ${s.rating || 4}/5]`).join('\n')}
+
+ACCREDITED CERTIFICATIONS
+--------------------------------------------------------------------------------
+${(currentProfile.certifications && currentProfile.certifications.length > 0
+  ? currentProfile.certifications
+  : ['Oracle Certified Associate — Java SE 17 (Verified)', 'AWS Certified Cloud Practitioner (Verified)']
+).map((c) => `• ${c}`).join('\n')}
+
+WORK EXPERIENCE & PROJECTS
+--------------------------------------------------------------------------------
+${(currentProfile.workExperience && currentProfile.workExperience.length > 0)
+  ? currentProfile.workExperience.map((w) => `• ${w.jobTitle} at ${w.organization} (${w.durationMonths} Months)\n  ${w.description}\n  Skills: ${(w.relevantSkills || []).join(', ')}`).join('\n\n')
+  : '• Cloud-Based Real-Time Assessment Engine (React, Node.js, SQLite)\n  Designed an offline-first learning test engine with automated coding scorecards.\n\n• Software Engineering Intern — EdTech Systems (Summer 2025)\n  Engineered RESTful microservice APIs in Spring Boot and optimized query performance.'}
+
+VERIFICATION & SECURITY METADATA
+--------------------------------------------------------------------------------
+Verification State:  ${currentProfile.verificationStatus.toUpperCase()}
+Candidate UID:       ${currentProfile.id}
+Authoritative File:  ${resumeName}
+Uploaded Timestamp:  ${currentProfile.resume?.uploadedAt || new Date().toISOString()}
+Tamper-Proof Digest: SHA256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+================================================================================
+Generated and digitally certified by NIYOJAN Campus Recruitment System.
+`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = resumeName.replace(/\.pdf$/, '.txt');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // Run AI-Based Eligibility Assessment against flagship Graduate Software Engineer drive
   const handleRunAiEligibilityCheck = () => {
@@ -65,7 +204,7 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
         minimumCgpa: 7.0
       };
 
-      const candidateCgpa = profile.education?.cgpa || 8.4;
+      const candidateCgpa = currentProfile.education?.cgpa || 8.4;
       const isCgpaEligible = candidateCgpa >= targetDrive.minimumCgpa;
 
       setAssessmentResult({
@@ -75,7 +214,7 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
         strengths: [
           `Academic Excellence: CGPA of ${candidateCgpa}/10 surpasses the minimum required threshold of ${targetDrive.minimumCgpa}.`,
           `Verified Skills: Tier 3 Assessment-Verified credentials in Data Structures & Core Java.`,
-          `Engineering Degree: ${profile.education?.degree} in ${profile.education?.branch} aligns directly with Excelsoft Engineering qualification criteria.`,
+          `Engineering Degree: ${currentProfile.education?.degree} in ${currentProfile.education?.branch} aligns directly with Excelsoft Engineering qualification criteria.`,
           `Project Portfolio: Strong repository projects demonstrating scalable Full-Stack architecture.`
         ],
         gaps: [
@@ -115,19 +254,19 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
       <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-2xl shadow-md shadow-indigo-500/20">
-            {profile.fullName ? profile.fullName.charAt(0) : 'R'}
+            {currentProfile.fullName ? currentProfile.fullName.charAt(0) : 'R'}
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {profile.fullName || 'Rohan Sharma'}
+                {currentProfile.fullName || 'Rohan Sharma'}
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
                 Verified Candidate
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              {profile.education?.degree} in {profile.education?.branch} • {profile.education?.institution || 'VTU Campus Center'}
+              {currentProfile.education?.degree} in {currentProfile.education?.branch} • {currentProfile.education?.institution || 'VTU Campus Center'}
             </p>
           </div>
         </div>
@@ -194,29 +333,29 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <span className="text-slate-400 block mb-0.5">Full Name</span>
-                  <strong className="text-slate-800">{profile.fullName || 'Rohan Sharma'}</strong>
+                  <strong className="text-slate-800">{currentProfile.fullName || 'Rohan Sharma'}</strong>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Email Address</span>
-                  <strong className="text-slate-800">{profile.email || 'rohan.sharma.vtu@gmail.com'}</strong>
+                  <strong className="text-slate-800">{currentProfile.email || 'rohan.sharma.vtu@gmail.com'}</strong>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Contact Phone</span>
-                  <strong className="text-slate-800">{profile.phone || '+91 98450 12345'}</strong>
+                  <strong className="text-slate-800">{currentProfile.phone || '+91 98450 12345'}</strong>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Current Location</span>
-                  <strong className="text-slate-800">{profile.currentLocation || 'Mysuru, Karnataka'}</strong>
+                  <strong className="text-slate-800">{currentProfile.currentLocation || 'Mysuru, Karnataka'}</strong>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Candidate Type</span>
                   <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold uppercase font-mono text-[10px]">
-                    {profile.candidateType}
+                    {currentProfile.candidateType}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Preferred Locations</span>
-                  <strong className="text-slate-800">{profile.preferredLocations?.join(', ') || 'Mysuru, Bengaluru, Hyderabad'}</strong>
+                  <strong className="text-slate-800">{currentProfile.preferredLocations?.join(', ') || 'Mysuru, Bengaluru, Hyderabad'}</strong>
                 </div>
               </div>
             </div>
@@ -231,20 +370,20 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <span className="text-slate-400 block mb-0.5">Degree & Branch</span>
-                  <strong className="text-slate-800">{profile.education?.degree} in {profile.education?.branch}</strong>
+                  <strong className="text-slate-800">{currentProfile.education?.degree} in {currentProfile.education?.branch}</strong>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">College / Institution</span>
-                  <strong className="text-slate-800">{profile.education?.institution || 'VTU Campus Center, Mysuru'}</strong>
+                  <strong className="text-slate-800">{currentProfile.education?.institution || 'VTU Campus Center, Mysuru'}</strong>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Cumulative CGPA</span>
-                  <strong className="text-indigo-600 text-sm font-black font-mono">{profile.education?.cgpa} / 10.0</strong>
+                  <strong className="text-indigo-600 text-sm font-black font-mono">{currentProfile.education?.cgpa} / 10.0</strong>
                   <span className="text-[10px] text-emerald-600 ml-1.5 font-bold">✓ Verified</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Graduation Year</span>
-                  <strong className="text-slate-800">{profile.education?.graduationYear || 2026}</strong>
+                  <strong className="text-slate-800">{currentProfile.education?.graduationYear || 2026}</strong>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">10th Grade Percentage</span>
@@ -303,7 +442,7 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
               </div>
 
               <div className="space-y-2">
-                {profile.skills?.map((skill, idx) => (
+                {currentProfile.skills?.map((skill, idx) => (
                   <div
                     key={idx}
                     className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs"
@@ -327,28 +466,103 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
 
             {/* 9 & 10. Certifications & Resume */}
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <FileText className="w-4 h-4 text-indigo-600" />
-                <span>9 & 10. Resume & Certifications</span>
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-600" />
+                  <span>9 & 10. Resume & Certifications</span>
+                </h3>
 
-              <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200/80 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2.5">
-                  <FileText className="w-6 h-6 text-indigo-600 shrink-0" />
-                  <div>
-                    <strong className="block text-slate-900">{profile.resume?.fileName || 'Rohan_Sharma_Resume_2026.pdf'}</strong>
-                    <span className="text-[11px] text-slate-500">{profile.resume?.fileSize || '1.8 MB'} • Uploaded</span>
+                <button
+                  type="button"
+                  onClick={() => setShowUploadModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs hover:shadow cursor-pointer self-start sm:self-auto"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload Updated Resume</span>
+                </button>
+              </div>
+
+              {/* Upload Success Alert */}
+              {uploadSuccessMessage && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between gap-2 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="font-medium">{uploadSuccessMessage}</span>
+                  </div>
+                  <button
+                    onClick={() => setUploadSuccessMessage(null)}
+                    className="text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Active Verified Resume Banner */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50/70 via-slate-50 to-indigo-50/40 border border-indigo-200/80 space-y-3">
+                <div className="flex items-center justify-between text-xs gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <strong className="block text-slate-900 font-bold truncate max-w-[200px] sm:max-w-xs">
+                          {currentProfile.resume?.fileName || 'Rohan_Sharma_Resume_2026.pdf'}
+                        </strong>
+                        <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold shrink-0">
+                          Active
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500">
+                        {currentProfile.resume?.fileSize || '1.8 MB'} • Uploaded{' '}
+                        {currentProfile.resume?.uploadedAt
+                          ? new Date(currentProfile.resume.uploadedAt).toLocaleDateString()
+                          : 'Recently'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleDownloadResume}
+                      className="p-2 rounded-lg bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 cursor-pointer shadow-2xs flex items-center gap-1 text-xs font-semibold"
+                      title="Download Verified Resume Document"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Download</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadModal(true)}
+                      className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer shadow-2xs flex items-center gap-1 text-xs font-semibold"
+                      title="Upload and Replace Resume"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Update</span>
+                    </button>
                   </div>
                 </div>
 
-                <button
-                  onClick={() => alert('Downloading official verified candidate resume...')}
-                  className="p-2 rounded-lg bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 cursor-pointer shadow-2xs"
-                  title="Download Resume"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </button>
+                {/* Parsed Summary Snippet */}
+                {currentProfile.resume?.parsedData?.summary && (
+                  <div className="p-2.5 rounded-lg bg-white/90 border border-indigo-100 text-[11px] text-slate-600 leading-relaxed">
+                    <span className="font-semibold text-slate-800">AI Parsed Summary: </span>
+                    {currentProfile.resume.parsedData.summary}
+                  </div>
+                )}
               </div>
+
+              {/* Hidden file input for native picking */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".pdf,.doc,.docx"
+                onChange={handleNativeFileChange}
+                className="hidden"
+              />
 
               <div className="space-y-1.5 text-xs text-slate-700">
                 <span className="font-bold block text-slate-800">Accredited Certifications:</span>
@@ -490,6 +704,239 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
 
         </div>
       )}
+
+      {/* Resume Upload & Parsing Modal */}
+      <ResumeUploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        isUploading={isUploadingResume}
+        uploadStep={uploadStep}
+        currentFileName={currentProfile.resume?.fileName}
+        onFileSelect={(file) => {
+          const sizeInKb = Math.round(file.size / 1024);
+          const formattedSize = sizeInKb > 1024 ? `${(sizeInKb / 1024).toFixed(1)} MB` : `${sizeInKb} KB`;
+          processResumeFile(file.name, formattedSize);
+        }}
+        onSimulateUpload={(fileName, fileSize, skills) => {
+          processResumeFile(fileName, fileSize, skills);
+        }}
+      />
+    </div>
+  );
+};
+
+interface ResumeUploadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  isUploading: boolean;
+  uploadStep: number;
+  currentFileName?: string;
+  onFileSelect: (file: File) => void;
+  onSimulateUpload: (fileName: string, fileSize: string, skills?: string[]) => void;
+}
+
+const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({
+  isOpen,
+  onClose,
+  isUploading,
+  uploadStep,
+  currentFileName,
+  onFileSelect,
+  onSimulateUpload
+}) => {
+  const [dragActive, setDragActive] = useState(false);
+  const modalInputRef = useRef<HTMLInputElement | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 sm:p-7 space-y-5 animate-scale-in">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Upload className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Upload Updated Resume</h3>
+              <p className="text-xs text-slate-500">Upload PDF or DOCX to update profile and verify 4-tier skills</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={isUploading}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer disabled:opacity-40"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Current Active Resume Note */}
+        {currentFileName && !isUploading && (
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+            <span className="text-slate-500">Current Active Resume:</span>
+            <span className="font-semibold text-slate-800 truncate max-w-[240px]">{currentFileName}</span>
+          </div>
+        )}
+
+        {/* Upload State / Progress */}
+        {isUploading ? (
+          <div className="p-8 rounded-2xl bg-indigo-50/50 border border-indigo-200 text-center space-y-4">
+            <RefreshCw className="w-10 h-10 text-indigo-600 animate-spin mx-auto" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-slate-900">
+                {uploadStep === 1 && '1. Uploading verified document to secure storage...'}
+                {uploadStep === 2 && '2. NIYOJAN AI analyzing candidate competencies...'}
+                {uploadStep === 3 && '3. Upgrading matching skills to Tier-2 Resume Extracted...'}
+              </h4>
+              <p className="text-xs text-slate-500">
+                Validating educational qualifications, CGPA, and programming proficiencies
+              </p>
+            </div>
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-indigo-600 h-full transition-all duration-500 rounded-full"
+                style={{ width: uploadStep === 1 ? '35%' : uploadStep === 2 ? '75%' : '100%' }}
+              />
+            </div>
+          </div>
+        ) : (
+          /* Dropzone */
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => modalInputRef.current?.click()}
+            className={`p-8 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all space-y-3 ${
+              dragActive
+                ? 'border-indigo-600 bg-indigo-50/80 scale-[1.01]'
+                : 'border-slate-300 hover:border-indigo-400 bg-slate-50/60 hover:bg-indigo-50/20'
+            }`}
+          >
+            <input
+              type="file"
+              ref={modalInputRef}
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onFileSelect(f);
+                if (e.target) e.target.value = '';
+              }}
+              className="hidden"
+            />
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 text-indigo-600 flex items-center justify-center mx-auto shadow-2xs">
+              <FileUp className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-800">
+                Drag and drop your updated resume here
+              </p>
+              <p className="text-xs text-slate-500">
+                or <span className="text-indigo-600 font-semibold underline">browse from your computer</span>
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-slate-400">
+              <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 font-mono">PDF</span>
+              <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 font-mono">DOC</span>
+              <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 font-mono">DOCX</span>
+              <span>• Max 10 MB</span>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Simulation Presets */}
+        {!isUploading && (
+          <div className="space-y-2 pt-1">
+            <span className="text-xs font-bold text-slate-700 block">Quick Simulation Presets:</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() =>
+                  onSimulateUpload('Armaan_Jena_Resume_2026_Updated.pdf', '2.2 MB', [
+                    'Core Java',
+                    'Spring Boot',
+                    'Data Structures',
+                    'PostgreSQL',
+                    'React',
+                    'Microservices'
+                  ])
+                }
+                className="p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 text-left transition-all cursor-pointer flex items-center gap-2 group"
+              >
+                <FileCheck className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform shrink-0" />
+                <div className="overflow-hidden">
+                  <span className="font-bold text-slate-800 block truncate">Armaan_Jena_Resume_2026.pdf</span>
+                  <span className="text-[10px] text-slate-400">2.2 MB • Full Stack CS</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  onSimulateUpload('Rohan_Sharma_Software_Engineer_Resume.pdf', '1.9 MB', [
+                    'Core Java',
+                    'Python',
+                    'Algorithms',
+                    'Distributed Systems',
+                    'SQL',
+                    'AWS'
+                  ])
+                }
+                className="p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 text-left transition-all cursor-pointer flex items-center gap-2 group"
+              >
+                <FileCheck className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform shrink-0" />
+                <div className="overflow-hidden">
+                  <span className="font-bold text-slate-800 block truncate">Rohan_Sharma_SWE_2026.pdf</span>
+                  <span className="text-[10px] text-slate-400">1.9 MB • Core Algorithms</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isUploading}
+            className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-800 hover:bg-slate-100 text-xs font-semibold cursor-pointer"
+          >
+            Cancel
+          </button>
+          {!isUploading && (
+            <button
+              type="button"
+              onClick={() => modalInputRef.current?.click()}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Select File</span>
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

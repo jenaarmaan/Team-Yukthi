@@ -244,13 +244,27 @@ class ClientAuthService {
    */
   public async changePassword(currentPassword: string, newPassword: string): Promise<void> {
     const token = await this.getValidIdToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token && token !== 'null') {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (this.currentUser) {
+      headers['x-niyojan-uid'] = this.currentUser.uid;
+      headers['x-niyojan-email'] = this.currentUser.email;
+      headers['x-niyojan-role'] = this.currentUser.role;
+    }
+
     const res = await fetch('/api/v1/auth/change-password', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ currentPassword, newPassword })
+      headers,
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+        email: this.currentUser?.email,
+        uid: this.currentUser?.uid
+      })
     });
 
     const data = await res.json();

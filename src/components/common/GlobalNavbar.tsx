@@ -402,7 +402,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                 </button>
               )}
 
-              {userInfo.role === 'interviewer' && onSelectWorkspace && (
+              {currentPlatform !== 'candidate_mobile' && userInfo.role === 'interviewer' && onSelectWorkspace && (
                 <button
                   onClick={() => {
                     setShowProfileModal(false);
@@ -416,7 +416,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                 </button>
               )}
 
-              {['hr_admin', 'recruitment_manager', 'interview_coordinator', 'super_admin'].includes(userInfo.role) && onSelectWorkspace && (
+              {currentPlatform !== 'candidate_mobile' && ['hr_admin', 'recruitment_manager', 'interview_coordinator', 'super_admin'].includes(userInfo.role) && onSelectWorkspace && (
                 <button
                   onClick={() => {
                     setShowProfileModal(false);

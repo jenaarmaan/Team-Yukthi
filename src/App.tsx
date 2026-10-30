@@ -231,11 +231,6 @@ export default function App() {
     return (
       <CandidateDashboardLayout
         initialTab={candidateTab}
-        onSwitchToAdmin={() => setPlatform('hr_admin')}
-        onSwitchToInterviewer={() => {
-          recruitmentService.switchAdminRole('interviewer');
-          setPlatform('interviewer');
-        }}
         onSwitchToHome={() => setPlatform('home')}
         onLogout={() => setPlatform('home')}
       />

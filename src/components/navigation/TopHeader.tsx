@@ -9,7 +9,6 @@ interface TopHeaderProps {
   onBack?: () => void;
   onOpenNotifications: () => void;
   onOpenScenarioSwitcher: () => void;
-  onSwitchToAdmin?: () => void;
   unreadNotificationsCount: number;
 }
 
@@ -20,7 +19,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onBack,
   onOpenNotifications,
   onOpenScenarioSwitcher,
-  onSwitchToAdmin,
   unreadNotificationsCount
 }) => {
   const currentPersona = recruitmentService.getCurrentProfile();
@@ -48,7 +46,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   NIYOJAN
                 </span>
                 <span className="text-[9px] font-semibold text-indigo-700 uppercase tracking-widest mt-0.5">
-                  Excelsoft Tech
+                  Campus
                 </span>
               </div>
             </div>
@@ -62,17 +60,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           )}
         </div>
 
-        {/* Right Slot: Admin Switcher + Persona Scenario Switcher + Notification Bell */}
+        {/* Right Slot: Persona Scenario Switcher + Notification Bell */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {onSwitchToAdmin && (
-            <button
-              onClick={onSwitchToAdmin}
-              className="hidden xs:flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-900 text-white text-[11px] font-bold hover:bg-slate-800 active:scale-95 transition-all shadow-xs"
-              title="Open Company HR Admin Dashboard"
-            >
-              <span>🏢 Admin</span>
-            </button>
-          )}
 
           <button
             onClick={onOpenScenarioSwitcher}
