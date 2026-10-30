@@ -16,6 +16,7 @@ import { AdminStaffManagement } from './AdminStaffManagement';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminQATestRunner } from './AdminQATestRunner';
 import { ChangePasswordModal } from '../auth/ChangePasswordModal';
+import { HrDashboardLayout } from './hr/HrDashboardLayout';
 import {
   LayoutDashboard,
   Building2,
@@ -141,6 +142,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   };
 
   const roleMeta = getRoleHeaderInfo();
+
+  // Dedicated HR Admin Dashboard (Steps 1 to 8: Fixed Left Sidebar with Overview, Analytics, Drives, Dashboard; Right AI Panel)
+  if (currentRole === 'hr_admin') {
+    return (
+      <HrDashboardLayout
+        onSwitchToCandidateApp={onSwitchToCandidateApp}
+        onSwitchToInterviewer={onSwitchToInterviewer}
+        onSwitchToHome={onSwitchToHome}
+        onLogout={onLogout}
+        onOpenRoleSwitcher={() => handleRoleChange('super_admin')}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900 selection:bg-indigo-500 selection:text-white">

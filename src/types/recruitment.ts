@@ -107,6 +107,15 @@ export interface HiringDrive {
   totalOpenings: number;
   interviewCapacity: number;
   currentRegistrations: number;
+  status?: 'active' | 'upcoming' | 'completed' | 'paused';
+  completedDate?: string;
+  selectionStats?: {
+    totalEvaluated: number;
+    selectedCount: number;
+    rejectedCount: number;
+    offerAcceptanceRate: number;
+    averageScore: number;
+  };
 }
 
 export interface InterviewSlot {

@@ -122,6 +122,10 @@ export interface HiringDriveDocument {
   requiredDegree: string[];
   description: string;
   status: 'active' | 'upcoming' | 'completed' | 'paused';
+  department?: string;
+  totalOpenings?: number;
+  hiringDriveDate?: string;
+  isRegistrationOpen?: boolean;
   stages: Array<{
     step: number;
     title: string;
@@ -142,6 +146,8 @@ export interface ApplicationDocument {
   appliedLocation: string;
   appliedDate: string;
   status: ApplicationStatus;
+  currentStage?: string;
+  candidateProfile?: any;
   stages: Array<{
     step: number;
     title: string;

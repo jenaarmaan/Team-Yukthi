@@ -107,7 +107,117 @@ export const SEED_HIRING_DRIVES: HiringDrive[] = [
     isRegistrationOpen: true,
     totalOpenings: 8,
     interviewCapacity: 25,
-    currentRegistrations: 21
+    currentRegistrations: 21,
+    status: 'upcoming'
+  },
+  {
+    id: 'drive_excelsoft_cloud_2025',
+    company: 'Excelsoft Technologies',
+    title: 'Cloud Infrastructure & Distributed Systems Drive 2025',
+    role: 'Cloud DevOps Engineer',
+    department: 'Cloud Infrastructure & Reliability Engineering',
+    description: 'Completed campus and lateral drive focusing on Kubernetes cluster orchestration, Terraform IaC, AWS cloud architecture, and multi-region microservices resilience.',
+    locations: ['Bengaluru', 'Mysuru'],
+    requiredDegree: ['B.E.', 'B.Tech', 'M.Tech'],
+    minimumCgpa: 6.8,
+    eligibleCandidateTypes: ['fresher', 'experienced'],
+    mandatorySkills: ['Docker', 'Kubernetes', 'AWS', 'Linux Shell'],
+    preferredSkills: ['Terraform', 'Prometheus', 'Go'],
+    minExperienceMonths: 0,
+    registrationDeadline: '2025-10-01T23:59:59',
+    hiringDriveDate: '2025-10-15T09:00:00',
+    completedDate: '2025-10-18T18:00:00',
+    stages: [
+      'Cloud Architecture Screening',
+      'Hands-on Containerization Lab',
+      'Technical Interview Round 1',
+      'Technical Interview Round 2',
+      'HR Evaluation & Offer'
+    ],
+    isRegistrationOpen: false,
+    status: 'completed',
+    totalOpenings: 25,
+    interviewCapacity: 100,
+    currentRegistrations: 96,
+    selectionStats: {
+      totalEvaluated: 89,
+      selectedCount: 24,
+      rejectedCount: 65,
+      offerAcceptanceRate: 92,
+      averageScore: 81.4
+    }
+  },
+  {
+    id: 'drive_excelsoft_cyber_2025',
+    company: 'Excelsoft Technologies',
+    title: 'Cybersecurity & Application Hardening Drive 2025',
+    role: 'Information Security Analyst',
+    department: 'Enterprise Security & Compliance',
+    description: 'Completed campus assessment drive for vulnerability assessment, penetration testing, OWASP Top 10 mitigation, and ISO 27001 compliance auditing across EdTech platforms.',
+    locations: ['Hyderabad', 'Mysuru'],
+    requiredDegree: ['B.E.', 'B.Tech', 'MCA', 'M.S. in InfoSec'],
+    minimumCgpa: 7.0,
+    eligibleCandidateTypes: ['fresher', 'experienced'],
+    mandatorySkills: ['Network Security', 'OWASP', 'Penetration Testing', 'Cryptography'],
+    preferredSkills: ['Burp Suite', 'Wireshark', 'Python'],
+    minExperienceMonths: 0,
+    registrationDeadline: '2025-08-10T23:59:59',
+    hiringDriveDate: '2025-08-22T09:30:00',
+    completedDate: '2025-08-24T17:30:00',
+    stages: [
+      'Security CTF Challenge',
+      'Technical Panel Round 1',
+      'Threat Modeling & Architecture Round',
+      'Offer Discussion'
+    ],
+    isRegistrationOpen: false,
+    status: 'completed',
+    totalOpenings: 15,
+    interviewCapacity: 70,
+    currentRegistrations: 68,
+    selectionStats: {
+      totalEvaluated: 64,
+      selectedCount: 14,
+      rejectedCount: 50,
+      offerAcceptanceRate: 88,
+      averageScore: 79.2
+    }
+  },
+  {
+    id: 'drive_excelsoft_interns_2025',
+    company: 'Excelsoft Technologies',
+    title: 'EdTech Summer Engineering Internship Drive 2025',
+    role: 'Software Development Intern (6 Months)',
+    department: 'Global Learning Ecosystems',
+    description: 'Completed university campus drive for 6-month pre-placement interns across full stack web, algorithms, and mobile product engineering with high PPO conversion.',
+    locations: ['Mysuru', 'Bengaluru'],
+    requiredDegree: ['B.E.', 'B.Tech', 'BCA', 'B.Sc Computer Science'],
+    minimumCgpa: 7.2,
+    eligibleCandidateTypes: ['fresher'],
+    mandatorySkills: ['Core Java', 'JavaScript', 'HTML/CSS', 'Data Structures'],
+    preferredSkills: ['React', 'Git', 'MySQL'],
+    minExperienceMonths: 0,
+    registrationDeadline: '2025-05-25T23:59:59',
+    hiringDriveDate: '2025-06-10T09:00:00',
+    completedDate: '2025-06-12T19:00:00',
+    stages: [
+      'Campus Algorithmic Test',
+      'Technical Pair Programming Round',
+      'Academic Project Presentation',
+      'HR Discussion'
+    ],
+    isRegistrationOpen: false,
+    status: 'completed',
+    totalOpenings: 35,
+    interviewCapacity: 120,
+    currentRegistrations: 115,
+    selectionStats: {
+      totalEvaluated: 107,
+      selectedCount: 35,
+      rejectedCount: 72,
+      offerAcceptanceRate: 97,
+      averageScore: 84.6
+    }
   }
 ];
 
