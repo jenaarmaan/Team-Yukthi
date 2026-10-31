@@ -157,13 +157,13 @@ export const HrAnalyticsView: React.FC<HrAnalyticsViewProps> = ({
 
     const t1 = setTimeout(() => {
       setFlStage('Computing localized gradient updates with DP-SGD (Mysuru & Bengaluru nodes, ε=0.74)...');
-    }, 450);
+    }, 60);
     const t2 = setTimeout(() => {
       setFlStage('Executing Secure Aggregation (SecAgg) with zero raw candidate PII egress...');
-    }, 900);
+    }, 120);
     const t3 = setTimeout(() => {
       setFlStage('Grounding aggregated federated embeddings against verified SQLite knowledge corpus...');
-    }, 1350);
+    }, 180);
 
     try {
       const token = await clientAuthService.getValidIdToken();
@@ -188,6 +188,12 @@ export const HrAnalyticsView: React.FC<HrAnalyticsViewProps> = ({
 
       const data = await res.json();
       if (data.success && data.data) {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        setFlStage('');
+        setIsQuerying(false);
+
         const assistantMsg: ChatMessage = {
           id: 'asst_' + Date.now(),
           sender: 'assistant',

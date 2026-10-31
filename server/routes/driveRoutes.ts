@@ -9,6 +9,8 @@ const router = Router();
 
 // Public / Authenticated read drives
 router.get('/', DrivesController.listDrives);
+router.get('/schedule/upcoming-slots', DrivesController.getUpcomingInterviewSlots);
+router.get('/upcoming-slots', DrivesController.getUpcomingInterviewSlots);
 router.get('/:id', DrivesController.getDriveById);
 router.get('/:id/eligibility', authenticateToken, DrivesController.checkEligibility);
 

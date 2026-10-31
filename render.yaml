@@ -16,3 +16,4 @@ services:
         value: ./data/niyojan.db
       - key: GEMINI_API_KEY
         sync: false
+

@@ -34,7 +34,10 @@ export class GeminiService {
    */
   public static isAvailable(): boolean {
     const key = config.geminiApiKey || process.env.GEMINI_API_KEY;
-    return Boolean(key && key.trim().length > 0);
+    if (!key || key.trim().length < 10) return false;
+    // Keys starting with 'AQ.' or placeholder patterns are not valid Gemini keys
+    if (key.startsWith('AQ.') || key.includes('YOUR_') || key.includes('placeholder')) return false;
+    return true;
   }
 
   /**
@@ -158,27 +161,37 @@ ${contextSnippets}
 Analyze the query against the metrics and retrieved chunks. Output pure JSON without markdown code fences:`;
 
     try {
-      const response = await ai.models.generateContent({
-        model: this.defaultModel,
-        contents: prompt,
-        config: {
-          systemInstruction,
-          temperature: 0.1,
-          responseMimeType: 'application/json'
-        }
-      });
+      const apiCall = (async () => {
+        const response = await ai.models.generateContent({
+          model: this.defaultModel,
+          contents: prompt,
+          config: {
+            systemInstruction,
+            temperature: 0.1,
+            responseMimeType: 'application/json'
+          }
+        });
 
-      const rawText = response.text?.trim() || '';
-      // Parse clean JSON
-      const parsed = JSON.parse(rawText);
-      if (parsed && typeof parsed.answer === 'string' && Array.isArray(parsed.insights)) {
-        return {
-          answer: parsed.answer,
-          insights: parsed.insights.map((s: any) => String(s)),
-          recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map((s: any) => String(s)) : []
-        };
-      }
-      return null;
+        const rawText = response.text?.trim() || '';
+        const parsed = JSON.parse(rawText);
+        if (parsed && typeof parsed.answer === 'string' && Array.isArray(parsed.insights)) {
+          return {
+            answer: parsed.answer,
+            insights: parsed.insights.map((s: any) => String(s)),
+            recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map((s: any) => String(s)) : []
+          };
+        }
+        return null;
+      })();
+
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => {
+          logger.warn('[GeminiService] Real-time RAG query timeout reached (1500ms). Falling back to instant deterministic SQLite RAG.');
+          resolve(null);
+        }, 1500)
+      );
+
+      return await Promise.race([apiCall, timeoutPromise]);
     } catch (err: any) {
       logger.warn(`[GeminiService] Real-time RAG query failed (${err.message}). Using local deterministic RAG.`);
       return null;

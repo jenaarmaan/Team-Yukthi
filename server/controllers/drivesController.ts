@@ -2,7 +2,11 @@ import { Request, Response } from 'express';
 import {
   hiringDrivesRepository,
   candidateProfilesRepository,
-  auditLogsRepository
+  auditLogsRepository,
+  interviewSlotsRepository,
+  applicationsRepository,
+  interviewEvaluationsRepository,
+  interviewerConflictsRepository
 } from '../repositories/index.ts';
 import { sendSuccess, sendBadRequest, sendNotFound } from '../utils/response.ts';
 import { CandidateType } from '../repositories/types.ts';
@@ -149,5 +153,70 @@ export class DrivesController {
       degreeStatus: { required: drive.requiredDegree, actual: actualDegree, passed: degreePassed },
       candidateTypeStatus: { required: eligibleTypes, actual: profile.candidateType, passed: typePassed }
     }, 'Eligibility assessment completed.');
+  }
+
+  public static async getUpcomingInterviewSlots(req: Request, res: Response): Promise<void> {
+    const slots = await interviewSlotsRepository.findAll(100);
+    const apps = await applicationsRepository.findAll(100);
+    const appMap = new Map(apps.map((a) => [a.id, a]));
+    const candidates = await candidateProfilesRepository.findAll(100);
+    const candidateMap = new Map(candidates.map((c) => [c.id, c]));
+    const drives = await hiringDrivesRepository.findAll(50);
+    const driveMap = new Map(drives.map((d) => [d.id, d]));
+    const evaluations = await interviewEvaluationsRepository.findAll(100);
+    const conflicts = await interviewerConflictsRepository.findAll(50);
+
+    const enriched = slots.map((slot) => {
+      const app = slot.applicationId ? appMap.get(slot.applicationId) : null;
+      const candidateId = slot.candidateId || app?.candidateId;
+      const candidate = candidateId ? candidateMap.get(candidateId) : null;
+      const driveId = slot.hiringDriveId || app?.hiringDriveId;
+      const drive = driveId ? driveMap.get(driveId) : null;
+
+      const evaluation = evaluations.find(
+        (e) => (e.slotId === slot.id || (candidateId && e.candidateId === candidateId) || (app && e.applicationId === app.id)) && e.status === 'submitted'
+      );
+
+      const conflict = conflicts.find(
+        (c) => (c.slotId === slot.id || (candidateId && c.candidateId === candidateId) || (app && c.applicationId === app.id)) && c.status === 'declared'
+      );
+
+      const executionStatus = (slot as any).executionStatus || (evaluation ? 'completed' : slot.attendanceVerified ? 'candidate_present' : 'scheduled');
+
+      return {
+        slotId: slot.id,
+        appId: app?.id || `app_${slot.id}`,
+        candidateId: candidateId || 'cand_unknown',
+        candidateName: candidate?.fullName || 'Candidate',
+        candidateType: candidate?.candidateType || 'fresher',
+        role: drive?.role || app?.role || 'Graduate Software Engineer',
+        driveTitle: drive?.title || app?.hiringDriveTitle || 'Campus Recruitment Drive 2026',
+        time: slot.time || '10:00 AM - 11:00 AM IST',
+        date: slot.date || 'Today',
+        room: slot.roomOrPanel || 'Panel 1 (Technical)',
+        venue: slot.location || 'Mysuru Campus',
+        attendanceVerified: Boolean(slot.attendanceVerified || evaluation),
+        checkedInAt: slot.checkedInAt,
+        executionStatus,
+        actualStartTime: (slot as any).actualStartTime,
+        actualEndTime: (slot as any).actualEndTime,
+        evaluation: evaluation ? {
+          id: evaluation.id,
+          recommendation: evaluation.recommendation,
+          recommendationReason: evaluation.recommendationReason,
+          interviewerName: evaluation.interviewerName,
+          overallSummary: evaluation.overallSummary,
+          submittedAt: evaluation.submittedAt
+        } : null,
+        conflict: conflict ? {
+          id: conflict.id,
+          candidateName: conflict.candidateName,
+          category: conflict.category,
+          status: conflict.status
+        } : null
+      };
+    });
+
+    sendSuccess(res, enriched, 'Upcoming interview slots retrieved.');
   }
 }

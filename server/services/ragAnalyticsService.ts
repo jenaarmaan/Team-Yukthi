@@ -49,10 +49,18 @@ export interface RagQueryResult {
 }
 
 export class RagAnalyticsService {
+  private static cachedCorpus: RagDocumentChunk[] | null = null;
+  private static lastCorpusBuiltAt = 0;
+  private static readonly CORPUS_TTL_MS = 5000;
+
   /**
    * Builds an indexed knowledge corpus from live SQLite recruitment data.
    */
-  public static async buildKnowledgeCorpus(): Promise<RagDocumentChunk[]> {
+  public static async buildKnowledgeCorpus(forceRefresh = false): Promise<RagDocumentChunk[]> {
+    if (!forceRefresh && this.cachedCorpus && Date.now() - this.lastCorpusBuiltAt < this.CORPUS_TTL_MS) {
+      return this.cachedCorpus;
+    }
+
     const chunks: RagDocumentChunk[] = [];
 
     try {
@@ -225,6 +233,8 @@ export class RagAnalyticsService {
       logger.error('Error building RAG knowledge corpus:', err);
     }
 
+    this.cachedCorpus = chunks;
+    this.lastCorpusBuiltAt = Date.now();
     return chunks;
   }
 

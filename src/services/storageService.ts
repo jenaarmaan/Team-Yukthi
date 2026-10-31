@@ -71,6 +71,7 @@ class RecruitmentService {
   private conflicts: InterviewerConflict[] = [];
   private incidents: InterviewerIncident[] = [];
   private vacantSlotRecoveries: VacantSlotRecovery[] = [];
+  private upcomingInterviewSlots: any[] = [];
   private listeners: (() => void)[] = [];
   private syncInterval: any = null;
   private isSyncing: boolean = false;
@@ -364,7 +365,11 @@ class RecruitmentService {
         interviewersRes,
         auditLogsRes,
         notifsRes,
-        myProfileRes
+        myProfileRes,
+        evalsRes,
+        incidentsRes,
+        conflictsRes,
+        upcomingSlotsRes
       ] = await Promise.allSettled([
         apiClient.get<any[]>('/drives'),
         apiClient.get<any[]>('/candidates'),
@@ -373,7 +378,11 @@ class RecruitmentService {
         apiClient.get<any[]>('/interviewers'),
         apiClient.get<any[]>('/admin/audit-logs'),
         apiClient.get<any[]>('/notifications/my'),
-        apiClient.get<any>('/candidates/me')
+        apiClient.get<any>('/candidates/me'),
+        apiClient.get<any[]>('/interviewer/evaluations'),
+        apiClient.get<any[]>('/interviewer/incidents'),
+        apiClient.get<any[]>('/interviewer/conflicts'),
+        apiClient.get<any[]>('/drives/upcoming-slots')
       ]);
 
       // 1. Synchronize Authoritative Hiring Drives
@@ -490,6 +499,32 @@ class RecruitmentService {
         if (activePersona) {
           activePersona.notifications = notifsRes.value.data;
         }
+      }
+
+      // 8. Synchronize Real-Time Interview Evaluations & Scorecards
+      if (evalsRes.status === 'fulfilled' && evalsRes.value.success && Array.isArray(evalsRes.value.data)) {
+        const serverIds = new Set(evalsRes.value.data.map((e: any) => e.id));
+        const localsNotOnServer = this.evaluations.filter((e) => !serverIds.has(e.id));
+        this.evaluations = [...localsNotOnServer, ...evalsRes.value.data];
+      }
+
+      // 9. Synchronize Real-Time Operational Incidents
+      if (incidentsRes.status === 'fulfilled' && incidentsRes.value.success && Array.isArray(incidentsRes.value.data)) {
+        const serverIds = new Set(incidentsRes.value.data.map((i: any) => i.id));
+        const localsNotOnServer = this.incidents.filter((i) => !serverIds.has(i.id));
+        this.incidents = [...localsNotOnServer, ...incidentsRes.value.data];
+      }
+
+      // 10. Synchronize Real-Time Panel Conflicts
+      if (conflictsRes.status === 'fulfilled' && conflictsRes.value.success && Array.isArray(conflictsRes.value.data)) {
+        const serverIds = new Set(conflictsRes.value.data.map((c: any) => c.id));
+        const localsNotOnServer = this.conflicts.filter((c) => !serverIds.has(c.id));
+        this.conflicts = [...localsNotOnServer, ...conflictsRes.value.data];
+      }
+
+      // 11. Synchronize Real-Time Upcoming Interview Slots Across Panels
+      if (upcomingSlotsRes.status === 'fulfilled' && upcomingSlotsRes.value.success && Array.isArray(upcomingSlotsRes.value.data)) {
+        this.upcomingInterviewSlots = upcomingSlotsRes.value.data;
       }
 
       this.lastSyncedAt = new Date().toISOString();
@@ -2977,6 +3012,94 @@ class RecruitmentService {
         executionStatus: evaluation ? 'completed' : item.executionStatus,
         conflictDeclared: Boolean(conflict),
         conflictInfo: conflict
+      };
+    });
+  }
+
+  public getUpcomingInterviewSlots(): any[] {
+    if (this.upcomingInterviewSlots && this.upcomingInterviewSlots.length > 0) {
+      return this.upcomingInterviewSlots.map((slot) => {
+        const evaluation = this.evaluations.find(
+          (e) =>
+            (e.slotId === slot.slotId ||
+              e.candidateId === slot.candidateId ||
+              e.applicationId === slot.appId) &&
+            e.status === 'submitted'
+        );
+        const conflict = this.conflicts.find(
+          (c) =>
+            c.slotId === slot.slotId ||
+            c.candidateId === slot.candidateId ||
+            c.applicationId === slot.appId
+        );
+        return {
+          ...slot,
+          evaluation: evaluation || slot.evaluation,
+          conflict: conflict || slot.conflict,
+          executionStatus: evaluation ? 'completed' : slot.executionStatus
+        };
+      });
+    }
+    return this.getUpcomingInterviewSlotsFallback();
+  }
+
+  public async fetchUpcomingInterviewSlots(): Promise<any[]> {
+    try {
+      const res = await apiClient.get<any[]>('/drives/upcoming-slots');
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        this.upcomingInterviewSlots = res.data;
+        this.notify();
+        return this.getUpcomingInterviewSlots();
+      }
+    } catch {
+      // fallback
+    }
+    return this.getUpcomingInterviewSlotsFallback();
+  }
+
+  public getUpcomingInterviewSlotsFallback(): any[] {
+    const apps = this.getAllApplications().filter((a) => a.status === 'confirmed' || a.interviewSlot != null);
+    return apps.map((app, idx) => {
+      const slotId = app.interviewSlot?.id || `slot_app_${idx}`;
+      const candidateId = app.candidateProfile?.id || app.candidateId;
+      const evaluation = this.evaluations.find(
+        (e) =>
+          (e.slotId === slotId ||
+            e.candidateId === candidateId ||
+            e.applicationId === app.id) &&
+          e.status === 'submitted'
+      );
+      const conflict = this.conflicts.find(
+        (c) =>
+          c.slotId === slotId ||
+          c.candidateId === candidateId ||
+          c.applicationId === app.id
+      );
+
+      const isEvaluated = Boolean(evaluation);
+      const isPresent = Boolean(app.interviewSlot?.attendanceVerified);
+      const executionStatus = isEvaluated
+        ? 'completed'
+        : isPresent
+        ? 'candidate_present'
+        : 'scheduled';
+
+      return {
+        slotId,
+        appId: app.id,
+        candidateId,
+        candidateName: app.candidateProfile?.fullName || 'Candidate Nominated',
+        candidateType: app.candidateProfile?.candidateType || 'fresher',
+        role: app.role || 'Graduate Software Engineer',
+        driveTitle: app.hiringDriveTitle || 'Excelsoft Campus Drive',
+        time: app.interviewSlot?.time || (idx === 0 ? '11:00 AM - 12:00 PM IST' : '02:00 PM - 03:00 PM IST'),
+        date: app.interviewSlot?.date || 'Today',
+        room: app.interviewSlot?.roomOrPanel || 'Panel 1 - Main Assessment Hall',
+        venue: app.interviewSlot?.location || 'Mysuru Tech Center',
+        attendanceVerified: isPresent || isEvaluated,
+        executionStatus,
+        evaluation,
+        conflict
       };
     });
   }
