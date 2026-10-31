@@ -6,6 +6,7 @@ import { QrSecurityService } from '../services/qrSecurityService.ts';
 import { StorageService } from '../services/storageService.ts';
 import { createRateLimiter } from '../middleware/rateLimiter.ts';
 import { sanitizeRequestBody } from '../middleware/sanitizer.ts';
+import { CandidatesController } from '../controllers/candidatesController.ts';
 import {
   auditLogsRepository,
   candidateProfilesRepository,
@@ -375,6 +376,81 @@ describe('NIYOJAN Phase 5: Enterprise Transactional Hardening & Security Audit',
       await expect(auditLogsRepository.delete(logId)).rejects.toThrow(
         'append-only and strictly immutable'
       );
+    });
+  });
+
+  describe('8. Career Preferences (Up to 4 Locations Boundary)', () => {
+    it('should allow saving up to 4 preferred locations for candidate profile', async () => {
+      const prefUid = 'cand_pref_' + Date.now();
+      await candidateProfilesRepository.create(prefUid, {
+        id: prefUid,
+        candidateType: 'fresher',
+        fullName: 'Test Candidate Preferences',
+        email: 'pref.cand@example.com',
+        phone: '+91 9888877777',
+        currentLocation: 'Mysuru',
+        preferredLocations: ['Mysuru'],
+        education: {
+          institution: 'MSRIT',
+          degree: 'B.Tech',
+          branch: 'Computer Science',
+          yearOfPassing: 2026,
+          cgpa: 8.8
+        },
+        skills: [
+          { id: 'sk_java', name: 'Java', category: 'language', proficiency: 'advanced', verificationLevel: 'assessment_verified' },
+          { id: 'sk_sql', name: 'SQL', category: 'database', proficiency: 'intermediate', verificationLevel: 'assessment_verified' }
+        ],
+        verificationStatus: 'verified',
+        profileCompletionPercentage: 100,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      let statusCode = 200;
+      let responseBody: any = null;
+      const mockRes: any = {
+        status(code: number) {
+          statusCode = code;
+          return this;
+        },
+        json(data: any) {
+          responseBody = data;
+          return this;
+        }
+      };
+
+      // Valid: 4 cities
+      const validReq: any = {
+        user: { uid: prefUid, role: 'candidate' },
+        body: { preferredLocations: ['Mysuru', 'Bengaluru', 'Hyderabad', 'Pune'] }
+      };
+      await CandidatesController.updatePreferredLocations(validReq, mockRes);
+      expect(statusCode).toBe(200);
+      expect(responseBody.success).toBe(true);
+      expect(responseBody.data.preferredLocations).toEqual(['Mysuru', 'Bengaluru', 'Hyderabad', 'Pune']);
+
+      // Invalid: 5 cities (> 4)
+      let rejectedCode = 200;
+      let rejectedBody: any = null;
+      const rejectRes: any = {
+        status(code: number) {
+          rejectedCode = code;
+          return this;
+        },
+        json(data: any) {
+          rejectedBody = data;
+          return this;
+        }
+      };
+      const invalidReq: any = {
+        user: { uid: prefUid, role: 'candidate' },
+        body: { preferredLocations: ['Mysuru', 'Bengaluru', 'Hyderabad', 'Pune', 'Chennai'] }
+      };
+      await CandidatesController.updatePreferredLocations(invalidReq, rejectRes);
+      expect(rejectedCode).toBe(400);
+      expect(rejectedBody.success).toBe(false);
+      expect(rejectedBody.error.message).toContain('between 1 and 4');
     });
   });
 });

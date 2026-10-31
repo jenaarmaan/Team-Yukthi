@@ -28,7 +28,12 @@ import {
   Check,
   X,
   FileUp,
-  FileCheck
+  FileCheck,
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Building2
 } from 'lucide-react';
 
 interface CandidateProfileViewProps {
@@ -71,9 +76,106 @@ export const CandidateProfileView: React.FC<CandidateProfileViewProps> = ({
   const [uploadStep, setUploadStep] = useState<number>(0);
   const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
 
+  // Career Preferences & City Selection States (Up to 4 Preferences)
+  const [isEditingPreferences, setIsEditingPreferences] = useState(false);
+  const [editPreferredCities, setEditPreferredCities] = useState<string[]>(
+    profile.preferredLocations && profile.preferredLocations.length > 0
+      ? profile.preferredLocations.slice(0, 4)
+      : ['Mysuru', 'Bengaluru']
+  );
+  const [customCityInput, setCustomCityInput] = useState('');
+  const [preferenceSaveMessage, setPreferenceSaveMessage] = useState<string | null>(null);
+  const [preferenceErrorMessage, setPreferenceErrorMessage] = useState<string | null>(null);
+
   React.useEffect(() => {
     setCurrentProfile(profile);
-  }, [profile]);
+    if (!isEditingPreferences) {
+      setEditPreferredCities(
+        profile.preferredLocations && profile.preferredLocations.length > 0
+          ? profile.preferredLocations.slice(0, 4)
+          : ['Mysuru', 'Bengaluru']
+      );
+    }
+  }, [profile, isEditingPreferences]);
+
+  const CURATED_CITIES = [
+    'Mysuru',
+    'Bengaluru',
+    'Hyderabad',
+    'Pune',
+    'Chennai',
+    'Delhi NCR',
+    'Mumbai',
+    'Coimbatore',
+    'Kolkata',
+    'Kochi'
+  ];
+
+  const handleAddCity = (cityToAdd: string) => {
+    const trimmed = cityToAdd.trim();
+    if (!trimmed) return;
+    setPreferenceErrorMessage(null);
+    if (editPreferredCities.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
+      setPreferenceErrorMessage(`"${trimmed}" is already in your selected preferences.`);
+      return;
+    }
+    if (editPreferredCities.length >= 4) {
+      setPreferenceErrorMessage('Maximum 4 preferred locations allowed. Please remove one before adding another.');
+      return;
+    }
+    setEditPreferredCities((prev) => [...prev, trimmed]);
+    setCustomCityInput('');
+  };
+
+  const handleRemoveCity = (cityToRemove: string) => {
+    setPreferenceErrorMessage(null);
+    if (editPreferredCities.length <= 1) {
+      setPreferenceErrorMessage('At least 1 preferred location is required.');
+      return;
+    }
+    setEditPreferredCities((prev) => prev.filter((c) => c.toLowerCase() !== cityToRemove.toLowerCase()));
+  };
+
+  const handleMoveCity = (index: number, direction: 'up' | 'down') => {
+    setPreferenceErrorMessage(null);
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= editPreferredCities.length) return;
+    const reordered = [...editPreferredCities];
+    const temp = reordered[index];
+    reordered[index] = reordered[targetIndex];
+    reordered[targetIndex] = temp;
+    setEditPreferredCities(reordered);
+  };
+
+  const handleSavePreferences = () => {
+    if (editPreferredCities.length === 0) {
+      setPreferenceErrorMessage('Please select at least 1 preferred city.');
+      return;
+    }
+    const finalCities = editPreferredCities.slice(0, 4);
+    recruitmentService.updatePreferredLocations(finalCities);
+    const updated = recruitmentService.getCurrentProfile();
+    setCurrentProfile({ ...updated });
+    setIsEditingPreferences(false);
+    setPreferenceErrorMessage(null);
+    setPreferenceSaveMessage('Career city preferences updated! AI recommendations refreshed based on your selected locations.');
+    if (onProfileUpdated) {
+      onProfileUpdated();
+    }
+    setTimeout(() => {
+      setPreferenceSaveMessage(null);
+    }, 5000);
+  };
+
+  const handleCancelPreferences = () => {
+    setEditPreferredCities(
+      currentProfile.preferredLocations && currentProfile.preferredLocations.length > 0
+        ? currentProfile.preferredLocations.slice(0, 4)
+        : ['Mysuru', 'Bengaluru']
+    );
+    setPreferenceErrorMessage(null);
+    setIsEditingPreferences(false);
+  };
 
   // Process & Upload Resume
   const processResumeFile = (fileName: string, fileSize: string, customSkills?: string[]) => {
@@ -577,26 +679,420 @@ Generated and digitally certified by NIYOJAN Campus Recruitment System.
               </div>
             </div>
 
-            {/* 11 & 12. Career Preferences */}
-            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
-              <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
-                11 & 12. Career Preferences
-              </h3>
+            {/* 11 & 12. Career Preferences with Interactive City Editing & AI Recommendations */}
+            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-6">
+              
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-indigo-600" />
+                    <span>11 & 12. Career Preferences</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Configure your target employment parameters and up to 4 preferred interview/work cities.
+                  </p>
+                </div>
 
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Target Role:</span>
-                  <strong className="text-slate-800">Graduate Software Engineer</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Preferred Locations:</span>
-                  <strong className="text-slate-800">Mysuru, Bengaluru</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Notice Period:</span>
-                  <strong className="text-slate-800">Immediate (Campus Graduate)</strong>
+                <div className="flex items-center gap-2">
+                  {isEditingPreferences ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleSavePreferences}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Save Preferences</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelPreferences}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Cancel</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingPreferences(true)}
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 border border-indigo-200 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit City Preferences</span>
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {/* Status Notifications */}
+              {preferenceSaveMessage && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-medium flex items-center gap-2 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{preferenceSaveMessage}</span>
+                </div>
+              )}
+              {preferenceErrorMessage && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium flex items-center gap-2 animate-fade-in">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{preferenceErrorMessage}</span>
+                </div>
+              )}
+
+              {/* Target Role & Notice Period Badges */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                <div className="flex items-center justify-between sm:justify-start sm:gap-3">
+                  <span className="text-slate-500 font-medium">Target Role:</span>
+                  <span className="font-bold text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                    Graduate Software Engineer
+                  </span>
+                </div>
+                <div className="flex items-center justify-between sm:justify-start sm:gap-3">
+                  <span className="text-slate-500 font-medium">Notice Period:</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs">
+                    Immediate (Campus Graduate)
+                  </span>
+                </div>
+              </div>
+
+              {/* City Preferences (Up to 4 Preferences) */}
+              {(() => {
+                const activeCities = currentProfile.preferredLocations && currentProfile.preferredLocations.length > 0
+                  ? currentProfile.preferredLocations.slice(0, 4)
+                  : ['Mysuru', 'Bengaluru'];
+                const primaryCity = activeCities[0] || 'Mysuru';
+                const isHomeCityMatch = primaryCity.toLowerCase() === (currentProfile.currentLocation || '').toLowerCase();
+                const cityMatchingDrives = hiringDrives.filter((drive) => {
+                  if (!drive.locations || drive.locations.length === 0) return true;
+                  return drive.locations.some((loc) =>
+                    activeCities.some((city) => city.toLowerCase() === loc.toLowerCase())
+                  );
+                });
+
+                return (
+                  <>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-indigo-600" />
+                          <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                            City Preferences (Up to 4 Locations)
+                          </span>
+                        </div>
+                        <span className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                          (isEditingPreferences ? editPreferredCities.length : activeCities.length) === 4
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            : 'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}>
+                          {isEditingPreferences ? editPreferredCities.length : activeCities.length} / 4 Selected
+                        </span>
+                      </div>
+
+                      {/* READ ONLY MODE */}
+                      {!isEditingPreferences && (
+                        <div className="space-y-2.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {activeCities.map((city, idx) => (
+                              <div
+                                key={city}
+                                className="p-3 rounded-xl bg-slate-50/90 border border-slate-200 flex items-center justify-between hover:bg-slate-50 hover:border-indigo-200 transition-all shadow-2xs"
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold font-mono ${
+                                    idx === 0
+                                      ? 'bg-indigo-600 text-white shadow-xs'
+                                      : idx === 1
+                                      ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                                      : 'bg-slate-200 text-slate-700'
+                                  }`}>
+                                    #{idx + 1}
+                                  </span>
+                                  <div>
+                                    <span className="font-bold text-xs text-slate-900 block">{city}</span>
+                                    <span className="text-[10px] text-slate-500 font-medium">
+                                      {idx === 0
+                                        ? 'Primary Preference (Highest Weight)'
+                                        : idx === 1
+                                        ? 'Secondary Preference'
+                                        : idx === 2
+                                        ? 'Tertiary Preference'
+                                        : 'Quaternary Preference'}
+                                    </span>
+                                  </div>
+                                </div>
+                                {city.toLowerCase() === (currentProfile.currentLocation || '').toLowerCase() && (
+                                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    Current Residence
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          {activeCities.length < 4 && (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingPreferences(true)}
+                              className="w-full py-2.5 px-3 border border-dashed border-indigo-200 hover:border-indigo-400 rounded-xl text-center text-xs text-indigo-600 font-semibold bg-indigo-50/20 hover:bg-indigo-50/50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add city preference ({4 - activeCities.length} slot{4 - activeCities.length === 1 ? '' : 's'} remaining)</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* EDIT MODE */}
+                      {isEditingPreferences && (
+                        <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-200 space-y-4 animate-fade-in">
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Select up to <strong>4 cities</strong> in order of priority. Your <strong>#1 Primary</strong> city receives top priority for physical venue scheduling and standby slot recovery.
+                          </p>
+
+                          {/* Ranked Order List with Reordering Controls */}
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                              Current Priority Order:
+                            </span>
+                            <div className="space-y-1.5">
+                              {editPreferredCities.map((city, idx) => (
+                                <div
+                                  key={city}
+                                  className="p-2.5 rounded-xl bg-white border border-indigo-200 flex items-center justify-between shadow-2xs"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white font-mono font-bold text-xs flex items-center justify-center">
+                                      #{idx + 1}
+                                    </span>
+                                    <span className="font-bold text-xs text-slate-900">{city}</span>
+                                    {idx === 0 && (
+                                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">
+                                        Primary
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      disabled={idx === 0}
+                                      onClick={() => handleMoveCity(idx, 'up')}
+                                      className="p-1 rounded text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
+                                      title="Move up in priority"
+                                    >
+                                      <ArrowUp className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={idx === editPreferredCities.length - 1}
+                                      onClick={() => handleMoveCity(idx, 'down')}
+                                      className="p-1 rounded text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
+                                      title="Move down in priority"
+                                    >
+                                      <ArrowDown className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveCity(city)}
+                                      className="p-1 rounded text-rose-500 hover:bg-rose-50 transition-colors ml-1 cursor-pointer"
+                                      title="Remove city"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Quick Add Curated Recruitment Hubs */}
+                          <div className="space-y-2 pt-2 border-t border-indigo-100">
+                            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                              Curated Tech Hubs & Campus Centers:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {CURATED_CITIES.map((c) => {
+                                const isSelected = editPreferredCities.some((sc) => sc.toLowerCase() === c.toLowerCase());
+                                return (
+                                  <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => {
+                                      if (isSelected) {
+                                        handleRemoveCity(c);
+                                      } else {
+                                        handleAddCity(c);
+                                      }
+                                    }}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 ${
+                                      isSelected
+                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs'
+                                        : editPreferredCities.length >= 4
+                                        ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                        : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:text-indigo-600 cursor-pointer'
+                                    }`}
+                                  >
+                                    <span>{c}</span>
+                                    {isSelected ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Custom City Text Input */}
+                          <div className="pt-2 flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={customCityInput}
+                              onChange={(e) => setCustomCityInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddCity(customCityInput);
+                                }
+                              }}
+                              placeholder="Add another city (e.g. Noida, Trivandrum)..."
+                              disabled={editPreferredCities.length >= 4}
+                              className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs focus:outline-hidden focus:border-indigo-600 disabled:opacity-50"
+                            />
+                            <button
+                              type="button"
+                              disabled={!customCityInput.trim() || editPreferredCities.length >= 4}
+                              onClick={() => handleAddCity(customCityInput)}
+                              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs cursor-pointer shadow-xs"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ========================================================================= */}
+                    {/* Dynamic AI Career & Location Recommendations                              */}
+                    {/* ========================================================================= */}
+                    <div className="pt-4 border-t border-slate-100 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-indigo-600" />
+                          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            NIYOJAN AI Recommendations (Based on {activeCities.length} Preferred Cities)
+                          </h4>
+                        </div>
+                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full self-start sm:self-auto">
+                          Personalized Grounded Engine
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        {/* Card 1: Top Hiring Drive Alignments */}
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50/70 to-white border border-indigo-200/80 space-y-2 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                              <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Hiring Drives in Your Cities</span>
+                            </span>
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-800 rounded">
+                              {cityMatchingDrives.length} Active
+                            </span>
+                          </div>
+
+                          {cityMatchingDrives.length > 0 ? (
+                            <div className="space-y-1.5 pt-1">
+                              {cityMatchingDrives.slice(0, 2).map((drive) => {
+                                const isPrimaryMatch = drive.locations?.some((loc) => loc.toLowerCase() === primaryCity.toLowerCase());
+                                return (
+                                  <div key={drive.id} className="p-2 rounded-lg bg-white border border-slate-200 text-xs space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-slate-900 truncate max-w-[180px]">{drive.title || drive.role}</span>
+                                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                        96% Match
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                      <span>{drive.company} • {drive.locations?.join(', ')}</span>
+                                      {isPrimaryMatch && (
+                                        <span className="text-indigo-600 font-bold">#1 Location Match</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-600">
+                              Pooled hiring drives for {activeCities.join(', ')} will open in the upcoming campus cycle.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Card 2: Reporting Proximity & Commute Analysis */}
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50/50 to-white border border-emerald-200 space-y-2 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                              <Target className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Reporting Proximity Status</span>
+                            </span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                              {isHomeCityMatch ? 'Direct Local' : 'Regional Commute'}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {isHomeCityMatch ? (
+                              <>
+                                Your primary preference (<strong>{primaryCity}</strong>) directly matches your home location (<strong>{currentProfile.currentLocation}</strong>). You receive top priority for in-person morning slots at Excelsoft Main Assessment Hall with zero travel delay.
+                              </>
+                            ) : (
+                              <>
+                                Your primary preference (<strong>{primaryCity}</strong>) differs from your residence (<strong>{currentProfile.currentLocation}</strong>). Pre-cleared inter-city travel reimbursement and hybrid Round 1 evaluation routing are activated.
+                              </>
+                            )}
+                          </p>
+                        </div>
+
+                        {/* Card 3: FMCP Standby Priority Advantage */}
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50/50 to-white border border-amber-200 space-y-2 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                              <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
+                              <span>FMCP Standby Elevation Advantage</span>
+                            </span>
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded">
+                              +15% Weight
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            NIYOJAN&apos;s Fairness-Aware Multi-Stage Candidate Prioritisation (FMCP) engine assigns a <strong>+15% location affinity weight</strong> for <strong>{primaryCity}</strong>, prioritizing your profile for instant standby slot recovery during panel no-shows.
+                          </p>
+                        </div>
+
+                        {/* Card 4: Location-Based Skill Demand */}
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50/50 to-white border border-purple-200 space-y-2 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                              <Award className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Regional Market Competency Fit</span>
+                            </span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded">
+                              High Demand
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Panels across <strong>{activeCities.slice(0, 2).join(' and ')}</strong> report strong demand for candidates with verified <strong>Core Java</strong> and <strong>DSA</strong> competencies. Complete coding challenges in the Arena to maximize your shortlisting rank.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+
             </div>
 
           </div>

@@ -25,6 +25,14 @@ describe('NIYOJAN RAG Analytics & Recruitment Intelligence Engine', () => {
     expect(result.insights.length).toBeGreaterThan(0);
     expect(result.recommendations.length).toBeGreaterThan(0);
     expect(result.sources.length).toBeGreaterThan(0);
+    // Verify Secured Federated Learning (FL) Layer integration
+    expect(result.answer).toContain('Secured Federated Learning (FL) Layer');
+    expect(result.federatedLearning).toBeDefined();
+    expect(result.federatedLearning?.enabled).toBe(true);
+    expect(result.federatedLearning?.totalNodes).toBe(4);
+    expect(result.federatedLearning?.zeroDataEgressVerified).toBe(true);
+    expect(result.federatedLearning?.globalPrivacyBudget.epsilon).toBe(0.74);
+    expect(result.sources.some((s) => s.category === 'FEDERATED_LEARNING')).toBe(true);
   });
 });
 

@@ -73,6 +73,11 @@ export class CandidatesController {
       return;
     }
 
+    if (preferredLocations.length === 0 || preferredLocations.length > 4) {
+      sendBadRequest(res, 'You must provide between 1 and 4 preferred locations.');
+      return;
+    }
+
     const existing = await candidateProfilesRepository.findById(uid!);
     if (!existing) {
       sendNotFound(res, 'Candidate profile not found.');
