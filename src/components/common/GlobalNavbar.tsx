@@ -208,7 +208,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between relative">
           
           {/* ========================================================================= */}
-          {/* 1. LEFT SIDE: NIYOJAN Logo Emblem                                          */}
+          {/* 1. LEFT SIDE: Mobile Menu Toggle (if present)                             */}
           {/* ========================================================================= */}
           <div className="flex items-center gap-3">
             {onToggleMobileMenu && (
@@ -220,38 +220,20 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             )}
-
-            <button
-              onClick={onNavigateHome}
-              className="flex items-center gap-2.5 group cursor-pointer text-left focus:outline-hidden"
-              title="NIYOJAN Home"
-            >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-base shadow-sm shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-                NY
-              </div>
-              <div className="hidden sm:block">
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 tracking-wider font-mono">
-                  v2.0
-                </span>
-              </div>
-            </button>
           </div>
 
           {/* ========================================================================= */}
-          {/* 2. MIDDLE OF THE PAGE: NIYOJAN- Intelligent Hiring. Seamless Opportunities */}
+          {/* 2. MIDDLE OF THE PAGE: Bold NIYOJAN Brand                                  */}
           {/* Requirements: Centered in the middle of the navbar / page                  */}
           {/* ========================================================================= */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center text-center pointer-events-auto px-2">
             <button
               onClick={onNavigateHome}
-              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group text-center focus:outline-hidden"
-              title="NIYOJAN- Intelligent Hiring. Seamless Opportunities."
+              className="flex items-center justify-center cursor-pointer group text-center focus:outline-hidden"
+              title="NIYOJAN Home"
             >
-              <span className="font-black text-base sm:text-lg lg:text-xl tracking-tight text-slate-950 group-hover:text-indigo-600 transition-colors">
-                NIYOJAN-
-              </span>
-              <span className="text-xs sm:text-sm lg:text-base text-slate-600 font-semibold tracking-normal whitespace-nowrap hidden sm:inline">
-                Intelligent Hiring. Seamless Opportunities.
+              <span className="font-black text-2xl sm:text-3xl lg:text-4xl tracking-wider uppercase text-indigo-700 bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-600 bg-clip-text text-transparent drop-shadow-2xs group-hover:scale-105 transition-all select-none">
+                NIYOJAN
               </span>
             </button>
           </div>

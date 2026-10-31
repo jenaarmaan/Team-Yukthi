@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { QuestionSuggestionService } from '../services/questionSuggestionService.ts';
 import { hasPermission } from '../middleware/rbacMatrix.ts';
+import { recruitmentService } from '../../src/services/storageService.ts';
 import {
   interviewEvaluationsRepository,
   interviewerAvailabilityRepository,
@@ -114,6 +115,52 @@ describe('NIYOJAN Dedicated Interviewer Workspace Integration Tests', () => {
       const retrieved = await interviewEvaluationsRepository.findById(testEvalId);
       expect(retrieved?.status).toBe('submitted');
       expect(retrieved?.submittedAt).toBeDefined();
+    });
+
+    it('should synchronize evaluation in real time and reflect immediately in Feedback & Scorecards', async () => {
+      const candidates = recruitmentService.getAllCandidates();
+      const testCand = candidates.find((c) => c.profile.fullName.includes('Ananya'))?.profile || candidates[1].profile;
+
+      const evalPayload = {
+        slotId: 'slot_live_' + Date.now(),
+        applicationId: 'app_live_' + Date.now(),
+        candidateId: testCand.id,
+        candidateName: testCand.fullName,
+        hiringDriveId: 'drive_excelsoft_gse_2026',
+        roundName: 'Technical Interview Round 1 (DSA & Architecture)',
+        criteriaScores: [
+          { name: 'Core CS & DSA', score: 4.5, comments: 'Superb hash map & graph traversal' },
+          { name: 'System Design & Architecture', score: 4.0, comments: 'Clean microservice boundary' },
+          { name: 'Clean Code & Best Practices', score: 4.5, comments: 'Well structured' },
+          { name: 'Communication Clarity', score: 4.0, comments: 'Precise and confident' },
+          { name: 'Problem Solving Attitude', score: 4.5, comments: 'Proactive edge case handling' }
+        ],
+        strengths: ['DSA', 'Algorithmic efficiency'],
+        areasOfImprovement: ['Communication'],
+        overallSummary: 'Demonstrated deep algorithmic proficiency and clean design principles.',
+        recommendation: 'recommend_next_round',
+        recommendationReason: 'Reffered to next round based on distinction performance in DSA.'
+      };
+
+      const result = await recruitmentService.submitScorecard(evalPayload);
+      expect(result.success).toBe(true);
+
+      // Verify real-time reflection in getEvaluations()
+      const allEvaluations = recruitmentService.getEvaluations();
+      expect(allEvaluations.length).toBeGreaterThanOrEqual(1);
+
+      const found = allEvaluations.find((e) => e.candidateId === testCand.id || e.candidateName === testCand.fullName);
+      expect(found).toBeDefined();
+      expect(found?.recommendation).toBe('recommend_next_round');
+      expect(found?.recommendationReason).toContain('Reffered to next');
+      expect(found?.status).toBe('submitted');
+
+      // Verify today schedule dynamically updates evaluationStatus to submitted
+      const todaySchedule = await recruitmentService.fetchInterviewerTodaySchedule();
+      const schedItem = todaySchedule.find((s) => s.candidateId === testCand.id || s.slotId === evalPayload.slotId);
+      if (schedItem) {
+        expect(schedItem.evaluationStatus).toBe('submitted');
+      }
     });
   });
 

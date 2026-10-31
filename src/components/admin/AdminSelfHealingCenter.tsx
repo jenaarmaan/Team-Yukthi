@@ -271,10 +271,15 @@ export const AdminSelfHealingCenter: React.FC = () => {
                           selectedRecovery.hiringDriveId,
                           selectedRecovery.venue
                         );
-                        return { candidate, standby, match };
+                        const fmcp = recruitmentService.calculateFmcpScore(
+                          candidate.id,
+                          selectedRecovery.hiringDriveId,
+                          { location: selectedRecovery.venue }
+                        );
+                        return { candidate, standby, match, fmcp };
                       })
-                      .sort((a, b) => b.match.totalScore - a.match.totalScore)
-                      .map(({ candidate, standby, match }, rankIdx) => {
+                      .sort((a, b) => b.fmcp.totalFmcpScore - a.fmcp.totalFmcpScore)
+                      .map(({ candidate, standby, match, fmcp }, rankIdx) => {
                         const isSel = selectedStandbyId === candidate.id;
                         return (
                           <div
@@ -294,12 +299,22 @@ export const AdminSelfHealingCenter: React.FC = () => {
                                   </span>
                                   <span className="font-bold text-slate-900">{candidate.fullName}</span>
                                   <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
-                                    match.totalScore >= 85
+                                    fmcp.totalFmcpScore >= 85
                                       ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                       : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
                                   }`}>
-                                    Score: {match.totalScore}/100
+                                    FMCP Score: {fmcp.totalFmcpScore}/100
                                   </span>
+                                  {fmcp.fairRankingScore >= 7 && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      Parity Mitigated
+                                    </span>
+                                  )}
+                                  {fmcp.starvationPreventionApplied && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                      Anti-Starvation Lock
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-[11px] text-slate-500 mt-1">
                                   {candidate.education.degree} · Base: {candidate.currentLocation} · Pref: {candidate.preferredLocations.join(', ')}
@@ -317,29 +332,29 @@ export const AdminSelfHealingCenter: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* 4-Part Metric Score Breakdown */}
+                            {/* 4-Part FMCP Metric Score Breakdown */}
                             <div className="grid grid-cols-4 gap-1.5 mt-2.5 pt-2 border-t border-slate-200/80 text-[10px] font-mono">
                               <div className="bg-white/80 p-1.5 rounded border border-slate-200">
-                                <div className="text-slate-400">Skills</div>
-                                <div className="font-bold text-slate-800">{match.skillsScore}/40</div>
+                                <div className="text-slate-400">1. Weighted</div>
+                                <div className="font-bold text-slate-800">{fmcp.weightedMeritScore}/65</div>
                               </div>
                               <div className="bg-white/80 p-1.5 rounded border border-slate-200">
-                                <div className="text-slate-400">Location</div>
-                                <div className="font-bold text-slate-800">{match.locationScore}/25</div>
+                                <div className="text-slate-400">2. Fair Rank</div>
+                                <div className="font-bold text-emerald-700">+{fmcp.fairRankingScore}/10</div>
                               </div>
                               <div className="bg-white/80 p-1.5 rounded border border-slate-200">
-                                <div className="text-slate-400">Academic</div>
-                                <div className="font-bold text-slate-800">{match.academicScore}/20</div>
+                                <div className="text-slate-400">3. Aging Queue</div>
+                                <div className="font-bold text-amber-700">+{fmcp.agingPriorityScore}/15</div>
                               </div>
                               <div className="bg-white/80 p-1.5 rounded border border-slate-200">
-                                <div className="text-slate-400">Readiness</div>
-                                <div className="font-bold text-slate-800">{match.availabilityScore}/15</div>
+                                <div className="text-slate-400">4. Constraints</div>
+                                <div className="font-bold text-sky-700">{fmcp.constraintScore}/10</div>
                               </div>
                             </div>
 
                             {/* Explanatory Reasons */}
                             <div className="mt-2 space-y-0.5">
-                              {match.reasons.slice(0, 2).map((r, i) => (
+                              {fmcp.transparentReasons.slice(0, 2).map((r, i) => (
                                 <div key={i} className="text-[10px] text-slate-600 flex items-center gap-1.5">
                                   <span className="w-1 h-1 rounded-full bg-indigo-500 shrink-0" />
                                   <span>{r}</span>

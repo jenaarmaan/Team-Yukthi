@@ -54,8 +54,10 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
 
   // Live Firebase Infrastructure Status
   const [dbStatus, setDbStatus] = React.useState<{ status: string; latencyMs?: number; databaseId?: string } | null>(null);
+  const [, setVersion] = React.useState(0);
 
   React.useEffect(() => {
+    const unsub = recruitmentService.subscribe(() => setVersion((v) => v + 1));
     fetch('/api/v1/health/database')
       .then((res) => res.json())
       .then((json) => {
@@ -70,6 +72,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       .catch(() => {
         // Fallback gracefully
       });
+    return unsub;
   }, []);
 
   return (
@@ -234,7 +237,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               { label: '3. Prerequisite Eligibility Cleared', count: eligibleCandidates, pct: 76, color: 'bg-indigo-400' },
               { label: '4. Interview Slot Scheduled', count: confirmedSlots, pct: 54, color: 'bg-emerald-500' },
               { label: '5. Venue Biometric / QR Attendance', count: attendedCount, pct: 42, color: 'bg-teal-500' },
-              { label: '6. Evaluated / Selected', count: 12, pct: 22, color: 'bg-purple-600' }
+              { label: '6. Evaluated / Selected', count: Math.max(recruitmentService.getEvaluations().length, 1), pct: 22, color: 'bg-purple-600' }
             ].map((step, idx) => (
               <div key={idx} className="space-y-1">
                 <div className="flex justify-between items-center text-xs">

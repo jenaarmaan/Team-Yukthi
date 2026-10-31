@@ -6,7 +6,6 @@ describe('Arena Code Compilation & Evaluation Engine', () => {
   const twoSumProblem = ARENA_PROBLEMS.find((p) => p.id === 'prob_dsa_01')!;
 
   it('should reject invalid syntax code with COMPILATION_ERROR (user screenshot scenario)', async () => {
-    // The exact broken code from the user's uploaded screenshot
     const brokenCode = `function twoSum(nums, target) {
   const map = new Map();
   for (let i = 0; i < nums.length; i++) {
@@ -83,5 +82,86 @@ return [];
     expect(result.totalCases).toBe(totalCases);
     expect(result.totalPassed).toBe(totalCases);
   });
-});
 
+  describe('Computer Networks Questions', () => {
+    it('should validate Defang IPv4 Address (prob_cn_01)', async () => {
+      const prob = ARENA_PROBLEMS.find((p) => p.id === 'prob_cn_01')!;
+      expect(prob).toBeDefined();
+
+      const starter = prob.starterCode.javascript;
+      const res = await compileAndRunArenaCode(prob, starter, 'javascript', true);
+      expect(res.success).toBe(true);
+      expect(res.status).toBe('ACCEPTED');
+      expect(res.totalPassed).toBe(prob.sampleTestCases.length + prob.hiddenTestCases.length);
+
+      // Verify wrong answer rejection
+      const wrong = `function defangIPaddr(address) { return address; }`;
+      const resWrong = await compileAndRunArenaCode(prob, wrong, 'javascript', false);
+      expect(resWrong.success).toBe(false);
+      expect(resWrong.status).toBe('WRONG_ANSWER');
+    });
+
+    it('should validate TCP Sliding Window Flow Control (prob_cn_02)', async () => {
+      const prob = ARENA_PROBLEMS.find((p) => p.id === 'prob_cn_02')!;
+      expect(prob).toBeDefined();
+
+      const starter = prob.starterCode.javascript;
+      const res = await compileAndRunArenaCode(prob, starter, 'javascript', true);
+      expect(res.success).toBe(true);
+      expect(res.status).toBe('ACCEPTED');
+      expect(res.totalPassed).toBe(prob.sampleTestCases.length + prob.hiddenTestCases.length);
+    });
+
+    it('should validate IPv4 CIDR Subnet Resolver (prob_cn_03)', async () => {
+      const prob = ARENA_PROBLEMS.find((p) => p.id === 'prob_cn_03')!;
+      expect(prob).toBeDefined();
+
+      const starter = prob.starterCode.javascript;
+      const res = await compileAndRunArenaCode(prob, starter, 'javascript', true);
+      expect(res.success).toBe(true);
+      expect(res.status).toBe('ACCEPTED');
+      expect(res.totalPassed).toBe(prob.sampleTestCases.length + prob.hiddenTestCases.length);
+    });
+  });
+
+  describe('Object-Oriented Programming (OOP) Questions', () => {
+    it('should validate LRU Cache (prob_oop_01)', async () => {
+      const prob = ARENA_PROBLEMS.find((p) => p.id === 'prob_oop_01')!;
+      expect(prob).toBeDefined();
+
+      const starter = prob.starterCode.javascript;
+      const res = await compileAndRunArenaCode(prob, starter, 'javascript', true);
+      expect(res.success).toBe(true);
+      expect(res.status).toBe('ACCEPTED');
+      expect(res.totalPassed).toBe(prob.sampleTestCases.length + prob.hiddenTestCases.length);
+
+      // Verify incorrect implementation rejection
+      const broken = `function runLRUCache(capacity, operations, args) { return []; }`;
+      const resBroken = await compileAndRunArenaCode(prob, broken, 'javascript', false);
+      expect(resBroken.success).toBe(false);
+      expect(resBroken.status).toBe('WRONG_ANSWER');
+    });
+
+    it('should validate Notification Dispatcher (prob_oop_02)', async () => {
+      const prob = ARENA_PROBLEMS.find((p) => p.id === 'prob_oop_02')!;
+      expect(prob).toBeDefined();
+
+      const starter = prob.starterCode.javascript;
+      const res = await compileAndRunArenaCode(prob, starter, 'javascript', true);
+      expect(res.success).toBe(true);
+      expect(res.status).toBe('ACCEPTED');
+      expect(res.totalPassed).toBe(prob.sampleTestCases.length + prob.hiddenTestCases.length);
+    });
+
+    it('should validate Banking Transaction Ledger & State Machine (prob_oop_03)', async () => {
+      const prob = ARENA_PROBLEMS.find((p) => p.id === 'prob_oop_03')!;
+      expect(prob).toBeDefined();
+
+      const starter = prob.starterCode.javascript;
+      const res = await compileAndRunArenaCode(prob, starter, 'javascript', true);
+      expect(res.success).toBe(true);
+      expect(res.status).toBe('ACCEPTED');
+      expect(res.totalPassed).toBe(prob.sampleTestCases.length + prob.hiddenTestCases.length);
+    });
+  });
+});

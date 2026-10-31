@@ -4,6 +4,7 @@ import { HrOverviewView } from './HrOverviewView';
 import { HrAnalyticsView } from './HrAnalyticsView';
 import { HrDrivesView } from './HrDrivesView';
 import { HrAiAnalysisPanel } from './HrAiAnalysisPanel';
+import { HrFmcpRecommendationsView } from './HrFmcpRecommendationsView';
 import { ChangePasswordModal } from '../../auth/ChangePasswordModal';
 import { clientAuthService } from '../../../services/firebaseAuth';
 import { recruitmentService } from '../../../services/storageService';
@@ -18,7 +19,8 @@ import {
   X,
   Sparkles,
   Smartphone,
-  ChevronDown
+  ChevronDown,
+  Award
 } from 'lucide-react';
 
 interface HrDashboardLayoutProps {
@@ -29,7 +31,7 @@ interface HrDashboardLayoutProps {
   onOpenRoleSwitcher?: () => void;
 }
 
-export type HrSidebarTab = 'overview' | 'analytics' | 'drives' | 'dashboard';
+export type HrSidebarTab = 'overview' | 'fmcp' | 'analytics' | 'drives' | 'dashboard';
 
 export const HrDashboardLayout: React.FC<HrDashboardLayoutProps> = ({
   onSwitchToCandidateApp,
@@ -130,7 +132,34 @@ export const HrDashboardLayout: React.FC<HrDashboardLayoutProps> = ({
               <span>Overview</span>
             </button>
 
-            {/* 2. Analytics */}
+            {/* 2. FMCP Candidate Recommendations */}
+            <button
+              onClick={() => {
+                setActiveTab('fmcp');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'fmcp'
+                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Award className={`w-4 h-4 ${activeTab === 'fmcp' ? 'text-white' : 'text-slate-500'}`} />
+                <span>Candidate Prioritisation</span>
+              </div>
+              <span
+                className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase font-mono ${
+                  activeTab === 'fmcp'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-indigo-100 text-indigo-700'
+                }`}
+              >
+                FMCP
+              </span>
+            </button>
+
+            {/* 3. Analytics */}
             <button
               onClick={() => {
                 setActiveTab('analytics');
@@ -146,7 +175,7 @@ export const HrDashboardLayout: React.FC<HrDashboardLayoutProps> = ({
               <span>Analytics</span>
             </button>
 
-            {/* 3. Drives */}
+            {/* 4. Drives */}
             <button
               onClick={() => {
                 setActiveTab('drives');
@@ -189,8 +218,14 @@ export const HrDashboardLayout: React.FC<HrDashboardLayoutProps> = ({
         <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
           {activeTab === 'overview' && (
             <HrOverviewView
-              onNavigateToTab={(tab) => setActiveTab(tab)}
+              onNavigateToTab={(tab) => setActiveTab(tab as any)}
               onOpenUpcomingDrive={() => setActiveTab('drives')}
+            />
+          )}
+
+          {activeTab === 'fmcp' && (
+            <HrFmcpRecommendationsView
+              onNavigateToTab={(tab) => setActiveTab(tab as any)}
             />
           )}
 

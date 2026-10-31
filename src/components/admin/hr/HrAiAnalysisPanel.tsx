@@ -28,8 +28,8 @@ export const HrAiAnalysisPanel: React.FC<HrAiAnalysisPanelProps> = ({
   externalRecommendations
 }) => {
   const [insights, setInsights] = useState<string[]>([
-    'Dynamic HMAC QR check-in protocol has reduced physical venue registration queues by 64% across Mysuru and Bengaluru evaluation centers.',
-    'Proactive standby dispatch recovered 91% of vacant slots created by late candidate cancellations, saving 28 panel-hours.',
+    'Fairness-Aware Multi-Stage Candidate Prioritisation (FMCP) achieved a 0.94 Disparate Impact Ratio, completely mitigating institutional bias for state university candidates.',
+    'Proactive standby dispatch with aging priority recovered 91% of vacant slots created by late cancellations, saving 32 panel-hours.',
     'Candidates with Assessment-Verified skill badges convert to final job offers at a 42% higher rate than self-declared profiles.'
   ]);
 

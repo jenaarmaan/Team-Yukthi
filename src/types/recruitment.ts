@@ -283,6 +283,76 @@ export interface MatchScoreBreakdown {
   reasons: string[];
 }
 
+export interface FmcpScoreBreakdown {
+  totalFmcpScore: number; // 0 to 100
+  // Stage 1: Weighted Scoring (Suitability / Merit) max 65
+  weightedMeritScore: number; // max 65
+  skillsScore: number; // max 35 (weighted by verification tier)
+  qualificationScore: number; // max 20 (CGPA, degree branch alignment)
+  experienceScore: number; // max 10 (projects, internships, profile completeness)
+  
+  // Stage 2: Fair Ranking (Disparity Reduction & Anti-Bias) max 10
+  fairRankingScore: number; // max 10
+  disparateImpactRatio: number; // e.g. 0.94 (ideal 0.80 - 1.20)
+  parityCategory: 'state_univ_inclusion' | 'tier_2_3_parity' | 'demographic_parity' | 'standard_merit';
+  fairnessAdjustmentDetails: string;
+  
+  // Stage 3: Aging Priority (Waitlist Progression & Anti-Starvation) max 15
+  agingPriorityScore: number; // max 15
+  hoursQueued: number;
+  daysWaiting: number;
+  starvationPreventionApplied: boolean;
+  agingRationale: string;
+  
+  // Stage 4: Constraint-Based Allocation (Feasibility & Matching) max 10
+  constraintScore: number; // max 10
+  isAllocationFeasible: boolean;
+  venueConstraintMet: boolean;
+  timeWindowConstraintMet: boolean;
+  panelistConflictFree: boolean;
+  capacityLimitMet: boolean;
+  constraintFlags: string[];
+
+  // Eligibility & Decision Details
+  isEligible: boolean;
+  recommendationTier: 'top_priority_appointment' | 'strong_recommendation' | 'waitlist_buffer' | 'manual_review_needed';
+  transparentReasons: string[];
+  auditTimestamp: string;
+}
+
+export interface FmcpCandidateRanking {
+  candidateId: string;
+  candidateName: string;
+  candidateEmail: string;
+  candidateType: CandidateType;
+  currentLocation: string;
+  education: Education;
+  applicationId: string;
+  hiringDriveId: string;
+  hiringDriveTitle: string;
+  role: string;
+  applicationStatus: string;
+  fmcpScore: FmcpScoreBreakdown;
+  suggestedSlot?: {
+    slotId: string;
+    date: string;
+    time: string;
+    roomOrPanel: string;
+    venue: string;
+  };
+  rankIndex: number;
+}
+
+export interface FmcpFairnessAuditSummary {
+  totalEvaluated: number;
+  averageFmcpScore: number;
+  parityAdjustmentsCount: number;
+  starvationPreventsCount: number;
+  disparateImpactMetric: number;
+  opportunityLossAvoidedHours: number;
+  recommendedAppointmentsCount: number;
+}
+
 export interface ServiceResult<T = void> {
   success: boolean;
   message: string;

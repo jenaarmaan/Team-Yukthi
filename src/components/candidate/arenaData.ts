@@ -628,7 +628,11 @@ export const ARENA_LEARNING_TOPICS: ArenaLearningTopic[] = [
     description: 'Explore reliable stream transport, DNS resolution, HMAC-SHA256 nonces, and TLS 1.3 handshakes.',
     modulesCount: 8,
     completedModules: 5,
-    recommendedProblems: []
+    recommendedProblems: [
+      'Defang IPv4 Address & Checksum Validation',
+      'TCP Sliding Window Flow Control',
+      'IPv4 CIDR Subnet & Broadcast Resolver'
+    ]
   },
   {
     id: 'topic_oop',
@@ -637,7 +641,11 @@ export const ARENA_LEARNING_TOPICS: ArenaLearningTopic[] = [
     description: 'Write robust modular code applying Factory, Singleton, Observer patterns, and encapsulation.',
     modulesCount: 8,
     completedModules: 7,
-    recommendedProblems: []
+    recommendedProblems: [
+      'Design a Thread-Safe LRU Cache',
+      'Notification Dispatcher (Factory & Strategy Pattern)',
+      'Banking Transaction Ledger & State Machine'
+    ]
   },
   {
     id: 'topic_interview_prep',

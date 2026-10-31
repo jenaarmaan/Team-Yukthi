@@ -38,6 +38,10 @@ export const InterviewerAvailabilityView: React.FC<InterviewerAvailabilityViewPr
 
   useEffect(() => {
     loadData();
+    const unsubscribe = recruitmentService.subscribe(() => {
+      loadData();
+    });
+    return unsubscribe;
   }, []);
 
   const handleSaveAvailability = async (e: React.FormEvent) => {

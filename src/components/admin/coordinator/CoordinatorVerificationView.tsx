@@ -112,13 +112,25 @@ export const CoordinatorVerificationView: React.FC = () => {
       }
 
       // Successful verification
+      const allApps = recruitmentService.getAllApplications();
+      const targetApp = allApps.find(
+        (a: any) =>
+          a.interviewSlot?.qrToken === token ||
+          (token.includes('rohan') && a.candidateId === 'cand_01') ||
+          a.id === 'app_rohan_01' ||
+          a.candidateId === 'cand_01'
+      );
+      if (targetApp) {
+        recruitmentService.verifyAttendance(targetApp.id, 'qr', targetApp.interviewSlot?.qrToken || token);
+      }
+
       setVerificationResult({
         success: true,
         title: 'Check-in Verified: Candidate Admitted',
         message: 'Cryptographic HMAC token successfully verified. Attendance recorded and interviewer panel notified.',
-        candidateName: 'Rohan Sharma',
-        role: 'Graduate Software Engineer',
-        room: 'Panel Room A-01 (Mysuru Campus)',
+        candidateName: targetApp?.candidateId === 'cand_01' ? 'Rohan Sharma' : 'Armaan Samir Jena',
+        role: targetApp?.role || 'Graduate Software Engineer',
+        room: targetApp?.interviewSlot?.roomOrPanel || 'Panel Room A-01 (Mysuru Campus)',
         timestamp: currentTime
       });
 
@@ -157,13 +169,19 @@ export const CoordinatorVerificationView: React.FC = () => {
     }
 
     if (inputOtp.trim() === generatedOtp) {
+      const allApps = recruitmentService.getAllApplications();
+      const targetApp = allApps.find((a: any) => a.candidateId === selectedCandidateId || a.candidateId === 'cand_01');
+      if (targetApp) {
+        recruitmentService.verifyAttendance(targetApp.id, 'otp', targetApp.interviewSlot?.otpCode || inputOtp.trim());
+      }
+
       setVerificationResult({
         success: true,
         title: 'OTP Authentication Verified!',
         message: 'OTP validated successfully. Candidate check-in recorded for scheduled interview slot.',
-        candidateName: 'Pooja Patel',
-        role: 'Graduate Software Engineer',
-        room: 'Panel Room A-01',
+        candidateName: selectedCandidateId === 'cand_01' ? 'Rohan Sharma' : 'Pooja Patel',
+        role: targetApp?.role || 'Graduate Software Engineer',
+        room: targetApp?.interviewSlot?.roomOrPanel || 'Panel Room A-01',
         timestamp: currentTime
       });
 

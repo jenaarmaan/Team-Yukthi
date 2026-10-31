@@ -43,6 +43,12 @@ router.post(
 );
 
 // 6. Scorecards & Evaluations
+router.get(
+  '/evaluations',
+  requirePermission('interviewer:evaluations:view'),
+  InterviewerWorkspaceController.getEvaluations
+);
+
 router.post(
   '/evaluations/draft',
   requirePermission('interviewer:evaluations:submit'),

@@ -30,7 +30,8 @@ import {
   AlertTriangle,
   Timer,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  Terminal
 } from 'lucide-react';
 import { PublicWorkspaceTarget } from '../public/PublicHomePage';
 
@@ -47,6 +48,8 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({
 }) => {
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [activeNavSection, setActiveNavSection] = useState<string>('overview');
+  const [selectedMcpTool, setSelectedMcpTool] = useState<string>('niyojan_get_candidate_profile');
+  const [selectedConfigTab, setSelectedConfigTab] = useState<'claude' | 'cursor' | 'antigravity' | 'typescript' | 'python'>('claude');
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -72,7 +75,8 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({
         'qr_attendance',
         'workspaces',
         'self_healing',
-        'team_credits'
+        'team_credits',
+        'mcp_integrations'
       ];
       const scrollPosition = window.scrollY + 200;
 
@@ -197,6 +201,18 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({
             >
               <Building2 className="w-3.5 h-3.5" />
               <span>7. Team & Credits</span>
+            </button>
+
+            <button
+              onClick={() => scrollToSection('mcp_integrations')}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeNavSection === 'mcp_integrations'
+                  ? 'bg-indigo-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-950 hover:bg-white'
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              <span>8. MCP Models & Direct Integrations</span>
             </button>
           </div>
         </div>
@@ -1247,7 +1263,7 @@ if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
               <div>
                 <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider">
                   <Building2 className="w-4 h-4" />
-                  <span>Module 07 / 07</span>
+                  <span>Module 07 / 08</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1">
                   7. Team & Open-Source Acknowledgements
@@ -1303,8 +1319,615 @@ if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
                 </div>
               </div>
 
-              {/* End of Document Actions */}
+              {/* Navigation for Module 7 */}
               <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                <button
+                  onClick={() => scrollToSection('self_healing')}
+                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Previous: Self-Healing & 4-Tier Skills</span>
+                </button>
+
+                <button
+                  onClick={() => scrollToSection('mcp_integrations')}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                >
+                  <span>Next Section: 8. MCP Models & Direct Integrations</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION 8: MODEL CONTEXT PROTOCOL (MCP) MODELS & DIRECT INTEGRATIONS      */}
+        {/* ========================================================================= */}
+        <section id="mcp_integrations" className="scroll-mt-32">
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-xs space-y-8">
+            
+            <div className="border-b border-slate-100 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider">
+                  <Cpu className="w-4 h-4" />
+                  <span>Module 08 / 08 • Enterprise Agentic Protocol</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1">
+                  8. NIYOJAN Model Context Protocol (MCP) Server & Direct Integrations
+                </h2>
+                <p className="text-slate-600 text-sm mt-1">
+                  Direct AI agent & developer IDE integration schemas for Claude Desktop, Cursor IDE, Antigravity, Gemini CLI, and LangChain.
+                </p>
+              </div>
+              <button
+                onClick={() => scrollToSection('overview')}
+                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+                <span>Back to Top</span>
+              </button>
+            </div>
+
+            <div className="space-y-8 text-slate-700 text-sm sm:text-base leading-relaxed">
+              
+              {/* Executive Overview Banner */}
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50/80 via-slate-50 to-violet-50/60 border border-indigo-200/80 space-y-3">
+                <div className="flex items-center gap-2 text-indigo-950 font-bold text-base">
+                  <Server className="w-5 h-5 text-indigo-600" />
+                  <span>Why NIYOJAN Exposes an Official Model Context Protocol (MCP) Server</span>
+                </div>
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  The <strong>Model Context Protocol (MCP)</strong> standardizes how frontier LLMs and autonomous agents inspect live databases, invoke operational functions, and read enterprise resources. Instead of building brittle custom REST scripts or scraping interfaces, external AI assistants (like Claude, Cursor, or Antigravity) connect natively to the NIYOJAN MCP Server via high-speed, zero-overhead JSON-RPC 2.0 over standard I/O (stdio).
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                  <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1 font-mono">
+                      <Zap className="w-3 h-3" />
+                      Zero Network Overhead
+                    </span>
+                    <p className="text-xs text-slate-600 leading-snug">
+                      Direct stdio JSON-RPC 2.0 communication connected to the in-memory/WAL SQLite recruitment engine.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1 font-mono">
+                      <ShieldCheck className="w-3 h-3" />
+                      Role-Aware Isolation
+                    </span>
+                    <p className="text-xs text-slate-600 leading-snug">
+                      RBAC filtering strictly isolates candidate PII, interviewer evaluation notes, and organizational audit logs.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1 font-mono">
+                      <Cpu className="w-3 h-3" />
+                      Bi-Directional Action
+                    </span>
+                    <p className="text-xs text-slate-600 leading-snug">
+                      Agents can not only query telemetry, but execute self-healing standby dispatches and verify HMAC gate passes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 1. MCP PRODUCT TOOLS CATALOG */}
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Code className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-base font-bold text-slate-900">
+                      Product MCP Tool Models Available for Direct Integration
+                    </h3>
+                  </div>
+                  <span className="text-xs text-slate-500 font-mono">
+                    6 Standardized Tools • JSON Schema V7
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Tool List Column (4 cols) */}
+                  <div className="lg:col-span-5 space-y-2">
+                    {[
+                      {
+                        id: 'niyojan_get_candidate_profile',
+                        name: 'niyojan_get_candidate_profile',
+                        badge: 'Profile & Skills',
+                        desc: '13-point profile, 4-tier skill verification levels, CGPA & rubric scores.'
+                      },
+                      {
+                        id: 'niyojan_dispatch_slot_replacement',
+                        name: 'niyojan_dispatch_slot_replacement',
+                        badge: 'Self-Healing Engine',
+                        desc: 'Reclaim no-show slots within 60s & dispatch urgent standby replacement.'
+                      },
+                      {
+                        id: 'niyojan_verify_hmac_qr_gate',
+                        name: 'niyojan_verify_hmac_qr_gate',
+                        badge: 'Gate Security',
+                        desc: 'Cryptographic HMAC-SHA256 verification & single-use nonce admission.'
+                      },
+                      {
+                        id: 'niyojan_rag_query_recruitment_intel',
+                        name: 'niyojan_rag_query_recruitment_intel',
+                        badge: 'RAG Knowledgebase',
+                        desc: 'Contextual RAG semantic retrieval over hiring drives & funnel telemetry.'
+                      },
+                      {
+                        id: 'niyojan_generate_rubric_questions',
+                        name: 'niyojan_generate_rubric_questions',
+                        badge: 'Gemini AI',
+                        desc: 'Real-time technical interview questions mapped to verified candidate skills.'
+                      },
+                      {
+                        id: 'niyojan_manage_absence_reclaim',
+                        name: 'niyojan_manage_absence_reclaim',
+                        badge: 'Waitlist Ops',
+                        desc: 'Record candidate absences, excuse audits, and instant standby elevations.'
+                      }
+                    ].map((tool) => (
+                      <button
+                        key={tool.id}
+                        onClick={() => setSelectedMcpTool(tool.id)}
+                        className={`w-full p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                          selectedMcpTool === tool.id
+                            ? 'bg-indigo-50/80 border-indigo-300 ring-1 ring-indigo-400 shadow-2xs'
+                            : 'bg-slate-50/70 border-slate-200 hover:bg-slate-100/70'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-xs text-indigo-700">
+                            {tool.name}
+                          </span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600">
+                            {tool.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                          {tool.desc}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Tool Specification Details Panel (7 cols) */}
+                  <div className="lg:col-span-7 bg-slate-900 text-slate-200 p-5 rounded-3xl border border-slate-800 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="w-4 h-4 text-indigo-400" />
+                        <span className="font-mono text-xs font-bold text-indigo-300">
+                          {selectedMcpTool}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(selectedMcpTool, 'tool_name')}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer font-sans"
+                      >
+                        {copiedCodeId === 'tool_name' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-emerald-400">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy Tool Name</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Detailed Schema & Sample Payload */}
+                    {selectedMcpTool === 'niyojan_get_candidate_profile' && (
+                      <div className="space-y-3 text-xs">
+                        <div className="text-slate-300">
+                          <strong>Description:</strong> Queries candidate profile with 4-tier skill verification levels, verified cumulative CGPA, education credentials, and tamper-proof SHA-256 hash.
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-indigo-400 block">// Required Tool Arguments:</span>
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-cyan-300">
+                            {`{ "candidateId": "cand_01", "includeScores": true }`}
+                          </div>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-emerald-400 block">// Sample MCP Response Content:</span>
+                          <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto text-[10px] leading-relaxed max-h-56">
+{`{
+  "candidateId": "cand_01",
+  "fullName": "Rohan Sharma",
+  "email": "rohan.sharma.vtu@gmail.com",
+  "academicRecord": {
+    "institution": "VTU Affiliated Engineering Institute, Mysuru",
+    "degree": "B.E. Computer Science & Engineering",
+    "cgpa": 8.5,
+    "verified": true
+  },
+  "skillTiers": [
+    { "name": "Core Java", "tier": "ASSESSMENT_VERIFIED", "score": 94 },
+    { "name": "Data Structures", "tier": "ASSESSMENT_VERIFIED", "score": 88 },
+    { "name": "SQL & Database Design", "tier": "RESUME_EXTRACTED", "score": 82 },
+    { "name": "React & Frontend", "tier": "SELF_DECLARED", "score": 78 }
+  ],
+  "tamperProofHash": "sha256_e8a27b9c104d5e9f8a3c2b1e7f6d4a0b"
+}`}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedMcpTool === 'niyojan_dispatch_slot_replacement' && (
+                      <div className="space-y-3 text-xs">
+                        <div className="text-slate-300">
+                          <strong>Description:</strong> Triggers the Self-Healing slot algorithm when a scheduled candidate fails to arrive, auto-reclaiming the slot and dispatching an urgent replacement offer to the highest-ranked standby candidate within 60 seconds.
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-indigo-400 block">// Required Tool Arguments:</span>
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-cyan-300">
+                            {`{ "slotId": "slot_01", "autoReclaim": true, "thresholdSeconds": 60 }`}
+                          </div>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-emerald-400 block">// Sample MCP Response Content:</span>
+                          <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto text-[10px] leading-relaxed max-h-56">
+{`{
+  "success": true,
+  "slotId": "slot_01",
+  "status": "DISPATCHED_TO_STANDBY",
+  "originalCandidateStatus": "FORFEITED_NO_SHOW",
+  "dispatchedStandbyCandidate": {
+    "candidateId": "cand_standby_04",
+    "name": "Pooja Patel",
+    "cgpa": 8.9,
+    "standbyRank": 1,
+    "claimWindowSeconds": 60,
+    "responseStatus": "PENDING_CANDIDATE_ACCEPTANCE"
+  },
+  "selfHealingTelemetry": {
+    "reclaimLatencyMs": 420,
+    "slotUtilizationPreserved": "100%"
+  }
+}`}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedMcpTool === 'niyojan_verify_hmac_qr_gate' && (
+                      <div className="space-y-3 text-xs">
+                        <div className="text-slate-300">
+                          <strong>Description:</strong> Zero-trust gate verification validating cryptographic HMAC-SHA256 signature, 5-minute rolling TTL, candidate identity, and prevention of replay attacks.
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-indigo-400 block">// Required Tool Arguments:</span>
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-cyan-300">
+                            {`{ "token": "NIYOJAN_V2.eyJjYW5k...82a", "method": "qr", "venueRoom": "Panel Room A-01" }`}
+                          </div>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-emerald-400 block">// Sample MCP Response Content:</span>
+                          <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto text-[10px] leading-relaxed max-h-56">
+{`{
+  "valid": true,
+  "verificationMethod": "QR",
+  "candidate": {
+    "name": "Rohan Sharma",
+    "id": "cand_01",
+    "assignedRoom": "Panel Room A-01 (Mysuru Campus)"
+  },
+  "verifiedAt": "2026-10-31T05:30:00Z",
+  "admitTokenIssued": "ADMIT_GATE_4821",
+  "status": "ADMITTED_TO_INTERVIEW"
+}`}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedMcpTool === 'niyojan_rag_query_recruitment_intel' && (
+                      <div className="space-y-3 text-xs">
+                        <div className="text-slate-300">
+                          <strong>Description:</strong> Grounded RAG query across live SQLite recruitment tables with contextual synthesis and citation-backed analytics.
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-indigo-400 block">// Required Tool Arguments:</span>
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-cyan-300">
+                            {`{ "query": "Show Mysuru campus attendance rate and no-show recovery latency", "roleScope": "hr_admin" }`}
+                          </div>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-emerald-400 block">// Sample MCP Response Content:</span>
+                          <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto text-[10px] leading-relaxed max-h-56">
+{`{
+  "query": "Show Mysuru campus attendance rate and no-show recovery latency",
+  "answer": "Mysuru campus drive achieved 94.2% verified attendance with an average self-healing standby claim latency of 42 seconds across 4 confirmed panels.",
+  "metrics": {
+    "totalCandidates": 142,
+    "attendanceRate": 94.2,
+    "noShowRate": 5.8,
+    "recoverySuccessRate": 98.5
+  },
+  "groundedSources": [
+    { "title": "Mysuru Hiring Drive Summary", "score": 0.94 }
+  ]
+}`}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedMcpTool === 'niyojan_generate_rubric_questions' && (
+                      <div className="space-y-3 text-xs">
+                        <div className="text-slate-300">
+                          <strong>Description:</strong> Real-time Gemini 2.5 Flash technical interview question generator calibrated to verified candidate skill levels and role difficulty.
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-indigo-400 block">// Required Tool Arguments:</span>
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-cyan-300">
+                            {`{ "role": "Graduate Software Engineer", "skills": ["Core Java", "Data Structures"], "difficulty": "medium" }`}
+                          </div>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-emerald-400 block">// Sample MCP Response Content:</span>
+                          <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto text-[10px] leading-relaxed max-h-56">
+{`{
+  "role": "Graduate Software Engineer",
+  "skillsAssessed": ["Core Java", "Data Structures"],
+  "totalQuestions": 3,
+  "rubric": [
+    {
+      "id": "q_gemini_01",
+      "question": "How does HashMap handle bucket collisions in Java 8+ when treeification threshold is exceeded?",
+      "expectedKeyPoints": [
+        "LinkedList to Red-Black Tree transition (TREEIFY_THRESHOLD = 8)",
+        "O(log n) worst-case lookup guarantee",
+        "Comparable interface requirement for keys"
+      ]
+    }
+  ]
+}`}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedMcpTool === 'niyojan_manage_absence_reclaim' && (
+                      <div className="space-y-3 text-xs">
+                        <div className="text-slate-300">
+                          <strong>Description:</strong> Processes documented candidate absences, audits excuse validity, and elevates top waitlisted candidates.
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-indigo-400 block">// Required Tool Arguments:</span>
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-cyan-300">
+                            {`{ "applicationId": "app_rohan_01", "reason": "Transit Delay", "forfeitImmediate": true }`}
+                          </div>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          <span className="text-emerald-400 block">// Sample MCP Response Content:</span>
+                          <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto text-[10px] leading-relaxed max-h-56">
+{`{
+  "success": true,
+  "applicationId": "app_rohan_01",
+  "documentedReason": "Transit Delay",
+  "status": "SLOT_FORFEITED",
+  "action": "Standby candidate elevated to primary interview queue."
+}`}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. MCP URI RESOURCES */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Database className="w-4 h-4 text-indigo-600" />
+                  <h3 className="text-base font-bold text-slate-900">
+                    Live NIYOJAN MCP URI Resources
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-indigo-700">niyojan://drives/active</span>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-mono font-bold">READ</span>
+                    </div>
+                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                      Real-time campus recruitment drives, department targets, and vacancy quotas.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-indigo-700">niyojan://slots/live</span>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-mono font-bold">READ</span>
+                    </div>
+                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                      Live slot attendance matrix, panel occupancy, and real-time no-show warning alerts.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-indigo-700">niyojan://analytics/funnel</span>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-mono font-bold">READ</span>
+                    </div>
+                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                      Recruitment funnel conversion rates, standby claim latency, and saved engineering hours.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. DIRECT PLATFORM INTEGRATION SNIPPETS */}
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-base font-bold text-slate-900">
+                      Direct Configuration Guides for IDEs & Frameworks
+                    </h3>
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    Select your platform to view copyable configuration
+                  </span>
+                </div>
+
+                {/* Platform Selector Tabs */}
+                <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
+                  {[
+                    { id: 'claude', label: 'Claude Desktop' },
+                    { id: 'cursor', label: 'Cursor IDE' },
+                    { id: 'antigravity', label: 'Antigravity / Gemini CLI' },
+                    { id: 'typescript', label: 'TypeScript SDK' },
+                    { id: 'python', label: 'Python Client' }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSelectedConfigTab(tab.id as any)}
+                      className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                        selectedConfigTab === tab.id
+                          ? 'bg-white text-indigo-700 shadow-2xs font-bold'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Configuration Code Box */}
+                <div className="bg-slate-950 rounded-2xl border border-slate-800 p-5 space-y-3 font-mono text-xs">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <span className="text-slate-400 text-[11px]">
+                      {selectedConfigTab === 'claude' && 'claude_desktop_config.json'}
+                      {selectedConfigTab === 'cursor' && '.cursor/mcp.json'}
+                      {selectedConfigTab === 'antigravity' && '.gemini/settings.json'}
+                      {selectedConfigTab === 'typescript' && 'integrationClient.ts'}
+                      {selectedConfigTab === 'python' && 'integration_client.py'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const codeMap: Record<string, string> = {
+                          claude: JSON.stringify(
+                            {
+                              mcpServers: {
+                                'niyojan-campus-engine': {
+                                  command: 'npx',
+                                  args: ['-y', 'tsx', 'server/mcp/niyojanMcpServer.ts'],
+                                  env: {
+                                    NODE_ENV: 'production',
+                                    DATABASE_PATH: './data/niyojan.db'
+                                  }
+                                }
+                              }
+                            },
+                            null,
+                            2
+                          ),
+                          cursor: JSON.stringify(
+                            {
+                              mcpServers: {
+                                niyojan: {
+                                  command: 'npx',
+                                  args: ['-y', 'tsx', 'server/mcp/niyojanMcpServer.ts']
+                                }
+                              }
+                            },
+                            null,
+                            2
+                          ),
+                          antigravity: JSON.stringify(
+                            {
+                              mcpServers: {
+                                'niyojan-campus': {
+                                  command: 'npx',
+                                  args: ['-y', 'tsx', 'server/mcp/niyojanMcpServer.ts'],
+                                  env: {
+                                    GEMINI_API_KEY: 'YOUR_GEMINI_API_KEY'
+                                  }
+                                }
+                              }
+                            },
+                            null,
+                            2
+                          ),
+                          typescript: `import { Client } from "@modelcontextprotocol/sdk/client/index.js";\nimport { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";\n\nconst transport = new StdioClientTransport({\n  command: "npx",\n  args: ["-y", "tsx", "server/mcp/niyojanMcpServer.ts"]\n});\n\nconst client = new Client({ name: "enterprise-agent", version: "2.0.0" });\nawait client.connect(transport);\n\n// Dispatch Self-Healing Slot Replacement\nconst res = await client.callTool({\n  name: "niyojan_dispatch_slot_replacement",\n  arguments: { slotId: "slot_01", autoReclaim: true }\n});\nconsole.log(res.content[0].text);`,
+                          python: `import asyncio\nfrom mcp import ClientSession, StdioServerParameters\nfrom mcp.client.stdio import stdio_client\n\nasync def main():\n    server_params = StdioServerParameters(command="npx", args=["-y", "tsx", "server/mcp/niyojanMcpServer.ts"])\n    async with stdio_client(server_params) as (read, write):\n        async with ClientSession(read, write) as session:\n            await session.initialize()\n            res = await session.call_tool("niyojan_get_candidate_profile", {"candidateId": "cand_01"})\n            print(res.content[0].text)\n\nasyncio.run(main())`
+                        };
+                        copyToClipboard(codeMap[selectedConfigTab] || '', selectedConfigTab);
+                      }}
+                      className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer font-sans font-semibold"
+                    >
+                      {copiedCodeId === selectedConfigTab ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Configuration</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <pre className="text-slate-300 overflow-x-auto text-[11px] leading-relaxed p-1">
+                    {selectedConfigTab === 'claude' &&
+                      `{\n  "mcpServers": {\n    "niyojan-campus-engine": {\n      "command": "npx",\n      "args": ["-y", "tsx", "server/mcp/niyojanMcpServer.ts"],\n      "env": {\n        "NODE_ENV": "production",\n        "DATABASE_PATH": "./data/niyojan.db"\n      }\n    }\n  }\n}`}
+                    {selectedConfigTab === 'cursor' &&
+                      `{\n  "mcpServers": {\n    "niyojan": {\n      "command": "npx",\n      "args": ["-y", "tsx", "server/mcp/niyojanMcpServer.ts"]\n    }\n  }\n}`}
+                    {selectedConfigTab === 'antigravity' &&
+                      `{\n  "mcpServers": {\n    "niyojan-campus": {\n      "command": "npx",\n      "args": ["-y", "tsx", "server/mcp/niyojanMcpServer.ts"],\n      "env": {\n        "GEMINI_API_KEY": "YOUR_GEMINI_API_KEY"\n      }\n    }\n  }\n}`}
+                    {selectedConfigTab === 'typescript' &&
+                      `import { Client } from "@modelcontextprotocol/sdk/client/index.js";\nimport { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";\n\nconst transport = new StdioClientTransport({\n  command: "npx",\n  args: ["-y", "tsx", "server/mcp/niyojanMcpServer.ts"]\n});\n\nconst client = new Client({ name: "enterprise-agent", version: "2.0.0" });\nawait client.connect(transport);\n\n// Dispatch Self-Healing Slot Replacement\nconst res = await client.callTool({\n  name: "niyojan_dispatch_slot_replacement",\n  arguments: { slotId: "slot_01", autoReclaim: true }\n});\nconsole.log(res.content[0].text);`}
+                    {selectedConfigTab === 'python' &&
+                      `import asyncio\nfrom mcp import ClientSession, StdioServerParameters\nfrom mcp.client.stdio import stdio_client\n\nasync def main():\n    server_params = StdioServerParameters(command="npx", args=["-y", "tsx", "server/mcp/niyojanMcpServer.ts"])\n    async with stdio_client(server_params) as (read, write):\n        async with ClientSession(read, write) as session:\n            await session.initialize()\n            res = await session.call_tool("niyojan_get_candidate_profile", {"candidateId": "cand_01"})\n            print(res.content[0].text)\n\nasyncio.run(main())`}
+                  </pre>
+                </div>
+              </div>
+
+              {/* 4. Terminal Test One-Liner */}
+              <div className="p-4 rounded-2xl bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="font-mono text-[11px] text-slate-300">
+                    Test in Terminal: <strong className="text-emerald-300">echo &#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/list&quot;&#125; | npx tsx server/mcp/niyojanMcpServer.ts</strong>
+                  </span>
+                </div>
+                <button
+                  onClick={() =>
+                    copyToClipboard(
+                      'echo \'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\' | npx tsx server/mcp/niyojanMcpServer.ts',
+                      'cli_test'
+                    )
+                  }
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                >
+                  {copiedCodeId === 'cli_test' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy Command</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* End of Document Actions */}
+              <div className="pt-8 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
                 <div className="text-xs text-slate-500">
                   <span>© 2026 NIYOJAN Recruitment Engine • Team Yukthi. All rights reserved.</span>
                 </div>

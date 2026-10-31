@@ -97,7 +97,17 @@ export const AdminWaitlist: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900">{candidate.fullName}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">{candidate.fullName}</span>
+                        {(() => {
+                          const fmcp = recruitmentService.calculateFmcpScore(candidate.id, app.hiringDriveId);
+                          return (
+                            <span className="px-1.5 py-0.2 rounded font-mono font-bold text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              FMCP: {fmcp.totalFmcpScore}/100 (+{fmcp.agingPriorityScore} Aging)
+                            </span>
+                          );
+                        })()}
+                      </div>
                       <div className="text-[11px] text-slate-500">
                         {candidate.education.degree} in {candidate.education.branch} (CGPA: {candidate.education.cgpa})
                       </div>

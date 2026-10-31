@@ -14,11 +14,13 @@ import {
   Search,
   Filter,
   ShieldCheck,
+  ShieldAlert,
   Award,
   ChevronRight,
   TrendingUp,
   Activity,
-  UserCheck
+  UserCheck,
+  QrCode
 } from 'lucide-react';
 
 interface InterviewerDashboardProps {
@@ -28,6 +30,7 @@ interface InterviewerDashboardProps {
   onOpenScorecard: (slot: any) => void;
   onOpenQuestions: (candidateSkills: string[], role: string) => void;
   onNavigateTab: (tab: string) => void;
+  onOpenQrScanner?: () => void;
 }
 
 export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
@@ -36,7 +39,8 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
   onOpenExecutionRoom,
   onOpenScorecard,
   onOpenQuestions,
-  onNavigateTab
+  onNavigateTab,
+  onOpenQrScanner
 }) => {
   const [summary, setSummary] = useState<any>(null);
   const [schedule, setSchedule] = useState<any[]>([]);
@@ -59,12 +63,23 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
 
   useEffect(() => {
     loadDashboardData();
+    const unsubscribe = recruitmentService.subscribe(() => {
+      loadDashboardData();
+    });
+    return unsubscribe;
   }, [interviewer.id, dateFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadDashboardData();
   };
+
+  const liveEvaluations = recruitmentService.getEvaluations().filter((e) => e.status === 'submitted');
+  const effectiveCompletedCount = Math.max(liveEvaluations.length, summary?.completedTodayCount || 0);
+  const effectiveAssignedCount = Math.max(schedule.length, summary?.todayAssignedCount || 0, effectiveCompletedCount);
+  const effectivePendingCount = Math.max(0, effectiveAssignedCount - effectiveCompletedCount);
+  const effectiveHours = Math.round(effectiveCompletedCount * 1.0 * 10) / 10;
+  const remainingSlots = Math.max(0, 6 - effectiveCompletedCount);
 
   return (
     <div className="space-y-6">
@@ -83,15 +98,27 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
           </p>
         </div>
 
-        {/* Panel Quota Pill */}
-        <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/15 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600/40 flex items-center justify-center text-white">
-            <Clock className="w-5 h-5 text-indigo-200" />
-          </div>
-          <div className="text-xs">
-            <div className="text-[10px] uppercase font-bold text-slate-300">Daily Capacity Quota</div>
-            <div className="text-base font-extrabold text-white font-mono">
-              {summary?.remainingDailyCapacity ?? 4} Slots Remaining
+        {/* Action Controls & Panel Quota Pill */}
+        <div className="flex flex-wrap items-center gap-3">
+          {onOpenQrScanner && (
+            <button
+              onClick={onOpenQrScanner}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Scan Candidate Pass</span>
+            </button>
+          )}
+
+          <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/15 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600/40 flex items-center justify-center text-white">
+              <Clock className="w-5 h-5 text-indigo-200" />
+            </div>
+            <div className="text-xs">
+              <div className="text-[10px] uppercase font-bold text-slate-300">Daily Capacity Quota</div>
+              <div className="text-base font-extrabold text-white font-mono">
+                {remainingSlots} Slots Remaining
+              </div>
             </div>
           </div>
         </div>
@@ -102,7 +129,7 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Today's Assigned</div>
           <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1 tabular-nums">
-            {summary?.todayAssignedCount ?? schedule.length}
+            {effectiveAssignedCount}
           </div>
           <div className="text-[11px] text-slate-500 mt-0.5">Assigned candidate interviews</div>
         </div>
@@ -110,7 +137,7 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Completed Today</div>
           <div className="text-2xl font-extrabold text-emerald-800 font-mono mt-1 tabular-nums">
-            {summary?.completedTodayCount ?? 1}
+            {effectiveCompletedCount}
           </div>
           <div className="text-[11px] text-emerald-800 mt-0.5">Evaluations submitted</div>
         </div>
@@ -118,7 +145,7 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Pending Evaluations</div>
           <div className="text-2xl font-extrabold text-amber-800 font-mono mt-1 tabular-nums">
-            {summary?.pendingEvaluationsCount ?? 2}
+            {effectivePendingCount}
           </div>
           <div className="text-[11px] text-amber-800 mt-0.5">Action required post-interview</div>
         </div>
@@ -126,11 +153,32 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Evaluation Hours</div>
           <div className="text-2xl font-extrabold text-indigo-700 font-mono mt-1 tabular-nums">
-            {summary?.totalInterviewHours ?? 1.0} hrs
+            {effectiveHours} hrs
           </div>
           <div className="text-[11px] text-slate-500 mt-0.5">Across completed panels</div>
         </div>
       </div>
+
+      {/* Active Incident Alert Banner */}
+      {summary?.activeIncidentAlerts > 0 && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-fadeIn">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div className="text-xs">
+              <span className="font-bold text-amber-950">
+                Active Operational Incident Alert ({summary.activeIncidentAlerts} ticket{summary.activeIncidentAlerts > 1 ? 's' : ''}):
+              </span>{' '}
+              <span>Technical or venue disruption logged with Venue IT Desk &amp; Recruitment Operations.</span>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigateTab('incidents')}
+            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-2xs whitespace-nowrap self-start sm:self-center"
+          >
+            View Incident Tickets
+          </button>
+        </div>
+      )}
 
       {/* Main Schedule Section */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
@@ -224,6 +272,12 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
                         Evaluated
                       </span>
                     )}
+                    {slot.conflictDeclared && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-md text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        <ShieldAlert className="w-3 h-3 text-rose-600" />
+                        <span>Conflict Declared (Pending Reassignment)</span>
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-xs text-slate-600">
@@ -264,19 +318,50 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = ({
                   </button>
 
                   <button
-                    onClick={() => onOpenScorecard(slot)}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-800 font-bold text-xs shadow-2xs"
+                    onClick={() => {
+                      if (slot.evaluationStatus === 'submitted') {
+                        onNavigateTab('scorecards');
+                      } else {
+                        onOpenScorecard(slot);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg font-bold text-xs shadow-2xs flex items-center gap-1 transition-colors ${
+                      slot.evaluationStatus === 'submitted'
+                        ? 'border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                        : 'border border-slate-200 hover:bg-slate-50 text-slate-800'
+                    }`}
                   >
-                    Scorecard
+                    {slot.evaluationStatus === 'submitted' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                    <span>{slot.evaluationStatus === 'submitted' ? 'View Scorecard' : 'Scorecard'}</span>
                   </button>
 
-                  <button
-                    onClick={() => onOpenExecutionRoom(slot)}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
-                  >
-                    <Play className="w-3 h-3 fill-current" />
-                    <span>Live Console</span>
-                  </button>
+                  {onOpenQrScanner && !slot.attendanceVerified && (
+                    <button
+                      onClick={onOpenQrScanner}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs cursor-pointer shadow-2xs"
+                    >
+                      <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Scan Pass</span>
+                    </button>
+                  )}
+
+                  {slot.conflictDeclared ? (
+                    <button
+                      onClick={() => onNavigateTab('conflicts')}
+                      className="px-3.5 py-1.5 rounded-lg border border-rose-300 bg-rose-50 text-rose-700 font-bold text-xs hover:bg-rose-100 flex items-center gap-1 shadow-2xs"
+                    >
+                      <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                      <span>View Conflict</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onOpenExecutionRoom(slot)}
+                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
+                    >
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>Live Console</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

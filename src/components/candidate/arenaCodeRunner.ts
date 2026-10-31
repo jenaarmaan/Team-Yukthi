@@ -131,6 +131,121 @@ function getProblemMeta(problemId: string): {
         }
       };
 
+    case 'prob_cn_01': // Defang IPv4 Address & Checksum Validation
+      return {
+        funcName: 'defangIPaddr',
+        parseInput: (inputStr: string) => {
+          const match = inputStr.match(/address\s*=\s*"([^"]*)"/) || inputStr.match(/"([^"]*)"/);
+          return [match ? match[1] : '192.168.1.1'];
+        },
+        compareOutput: (actual: any, expectedStr: string) => {
+          const cleanExpected = expectedStr.trim().replace(/^"|"$/g, '');
+          return String(actual) === cleanExpected;
+        },
+        formatActual: (actual: any) => `"${actual}"`
+      };
+
+    case 'prob_cn_02': // TCP Sliding Window Flow Control
+      return {
+        funcName: 'tcpFlowControl',
+        parseInput: (inputStr: string) => {
+          const nMatch = inputStr.match(/n\s*=\s*(\d+)/);
+          const winMatch = inputStr.match(/winSize\s*=\s*(\d+)/);
+          const acksMatch = inputStr.match(/acks\s*=\s*(\[[^\]]*\])/);
+          return [
+            nMatch ? parseInt(nMatch[1], 10) : 10,
+            winMatch ? parseInt(winMatch[1], 10) : 4,
+            acksMatch ? JSON.parse(acksMatch[1]) : []
+          ];
+        },
+        compareOutput: (actual: any, expectedStr: string) => {
+          if (!Array.isArray(actual)) return false;
+          try {
+            const expected = JSON.parse(expectedStr);
+            return actual[0] === expected[0] && actual[1] === expected[1];
+          } catch {
+            return false;
+          }
+        },
+        formatActual: (actual: any) => JSON.stringify(actual)
+      };
+
+    case 'prob_cn_03': // IPv4 CIDR Subnet & Broadcast Resolver
+      return {
+        funcName: 'calculateSubnet',
+        parseInput: (inputStr: string) => {
+          const match = inputStr.match(/cidr\s*=\s*"([^"]*)"/) || inputStr.match(/"([^"]*)"/);
+          return [match ? match[1] : '192.168.10.75/24'];
+        },
+        compareOutput: (actual: any, expectedStr: string) => {
+          if (!Array.isArray(actual) || actual.length !== 2) return false;
+          try {
+            const expected = JSON.parse(expectedStr);
+            return actual[0] === expected[0] && actual[1] === expected[1];
+          } catch {
+            return false;
+          }
+        },
+        formatActual: (actual: any) => JSON.stringify(actual)
+      };
+
+    case 'prob_oop_01': // Design a Thread-Safe LRU Cache
+      return {
+        funcName: 'runLRUCache',
+        parseInput: (inputStr: string) => {
+          const capMatch = inputStr.match(/capacity\s*=\s*(\d+)/);
+          const opMatch = inputStr.match(/operations\s*=\s*(\[[^\]]*\])/);
+          const argsMatch = inputStr.match(/args\s*=\s*(\[\[.*\]\])/);
+          return [
+            capMatch ? parseInt(capMatch[1], 10) : 2,
+            opMatch ? JSON.parse(opMatch[1]) : [],
+            argsMatch ? JSON.parse(argsMatch[1]) : []
+          ];
+        },
+        compareOutput: (actual: any, expectedStr: string) => {
+          if (!Array.isArray(actual)) return false;
+          try {
+            const expected = JSON.parse(expectedStr);
+            return JSON.stringify(actual) === JSON.stringify(expected);
+          } catch {
+            return false;
+          }
+        },
+        formatActual: (actual: any) => JSON.stringify(actual)
+      };
+
+    case 'prob_oop_02': // Notification Dispatcher (Factory & Strategy Pattern)
+      return {
+        funcName: 'dispatchNotification',
+        parseInput: (inputStr: string) => {
+          const chMatch = inputStr.match(/channel\s*=\s*"([^"]*)"/);
+          const msgMatch = inputStr.match(/msg\s*=\s*"([^"]*)"/);
+          return [chMatch ? chMatch[1] : 'EMAIL', msgMatch ? msgMatch[1] : ''];
+        },
+        compareOutput: (actual: any, expectedStr: string) => {
+          const cleanExpected = expectedStr.trim().replace(/^"|"$/g, '');
+          return String(actual) === cleanExpected;
+        },
+        formatActual: (actual: any) => `"${actual}"`
+      };
+
+    case 'prob_oop_03': // Banking Transaction Ledger & State Machine
+      return {
+        funcName: 'processAccountLedger',
+        parseInput: (inputStr: string) => {
+          const balMatch = inputStr.match(/initialBalance\s*=\s*(-?\d+)/);
+          const txMatch = inputStr.match(/transactions\s*=\s*(\[\[.*?\]\])/);
+          return [
+            balMatch ? parseInt(balMatch[1], 10) : 100,
+            txMatch ? JSON.parse(txMatch[1]) : []
+          ];
+        },
+        compareOutput: (actual: any, expectedStr: string) => {
+          return Number(actual) === parseInt(expectedStr.trim(), 10);
+        },
+        formatActual: (actual: any) => String(actual)
+      };
+
     case 'prob_dbms_01': // Department Highest Salary (SQL)
     default:
       return {
@@ -155,11 +270,12 @@ function getProblemMeta(problemId: string): {
  */
 function cleanTypeScript(code: string): string {
   return code
+    .replace(/\b(public|private|protected|readonly)\s+/g, '')
+    .replace(/interface\s+[A-Za-z0-9_]+[\s\S]*?\{[\s\S]*?\}/g, '')
+    .replace(/type\s+[A-Za-z0-9_]+\s*=\s*[^;]+;/g, '')
     .replace(/:\s*([A-Za-z0-9_<>\[\]|& ]+)(?=[=,);])/g, '')
     .replace(/<[A-Za-z0-9_,\s<>]+>/g, '')
-    .replace(/as\s+[A-Za-z0-9_<>\[\]]+/g, '')
-    .replace(/interface\s+[A-Za-z0-9_]+\s*\{[^}]*\}/g, '')
-    .replace(/type\s+[A-Za-z0-9_]+\s*=\s*[^;]+;/g, '');
+    .replace(/as\s+[A-Za-z0-9_<>\[\]]+/g, '');
 }
 
 /**

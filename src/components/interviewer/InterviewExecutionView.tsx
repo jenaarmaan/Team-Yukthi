@@ -16,7 +16,8 @@ import {
   Building2,
   MapPin,
   HelpCircle,
-  Activity
+  Activity,
+  Smartphone
 } from 'lucide-react';
 
 interface InterviewExecutionViewProps {
@@ -32,6 +33,7 @@ interface InterviewExecutionViewProps {
   onOpenConflictModal: () => void;
   onOpenIncidentModal: () => void;
   onBackToDashboard: () => void;
+  onOpenQrScanner?: () => void;
 }
 
 export const InterviewExecutionView: React.FC<InterviewExecutionViewProps> = ({
@@ -46,7 +48,8 @@ export const InterviewExecutionView: React.FC<InterviewExecutionViewProps> = ({
   onOpenScorecard,
   onOpenConflictModal,
   onOpenIncidentModal,
-  onBackToDashboard
+  onBackToDashboard,
+  onOpenQrScanner
 }) => {
   const [executionStatus, setExecutionStatus] = useState<string>(initialStatus);
   const [secondsElapsed, setSecondsElapsed] = useState<number>(0);
@@ -54,6 +57,10 @@ export const InterviewExecutionView: React.FC<InterviewExecutionViewProps> = ({
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [liveNotes, setLiveNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    setExecutionStatus(initialStatus);
+  }, [initialStatus]);
 
   // Live Interview Timer
   useEffect(() => {
@@ -170,6 +177,19 @@ export const InterviewExecutionView: React.FC<InterviewExecutionViewProps> = ({
             <div className="flex flex-wrap items-center gap-3">
               {executionStatus !== 'in_progress' && executionStatus !== 'completed' && (
                 <>
+                  {onOpenQrScanner && (
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={onOpenQrScanner}
+                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold text-xs shadow-2xs transition-colors"
+                      title="Scan candidate QR Gate Pass or verification OTP"
+                    >
+                      <Smartphone className="w-4 h-4 text-indigo-600" />
+                      <span>Scan Candidate Pass</span>
+                    </button>
+                  )}
+
                   <button
                     disabled={isSubmitting}
                     onClick={() => handleAction('mark_candidate_present')}
